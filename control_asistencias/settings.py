@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import environ
 import os
 
 # settings.py
@@ -131,6 +132,8 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'asistencia/static']
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
 
 
 MEDIA_URL = '/media/'
