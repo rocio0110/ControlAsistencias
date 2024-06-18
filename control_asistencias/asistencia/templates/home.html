@@ -1,0 +1,139 @@
+{% comment %} {% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="Dashboard">
+    <meta name="keyword" content="Dashboard, Bootstrap, Admin, Template, Theme, Responsive, Fluid, Retina">
+
+    <title>DASHGUM - Bootstrap Admin Template</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="{% static '/css/bootstrap.css' %}" rel="stylesheet">
+    <!--external css-->
+    <link href="{% static 'font-awesome/css/font-awesome.css' %}" rel="stylesheet" />
+        
+    <!-- Custom styles for this template -->
+    <link href="{% static 'css/style.css' %}" rel="stylesheet">
+    <link href="{% static 'css/style-responsive.css' %}" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #ffffff; /* Blanco */
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            text-align: center;
+            background-color:  #ffffff; /* Blanco */
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        h2 {
+            color: #B08A5B; /* Café */
+        }
+
+        .qr-code {
+            margin-top: 20px;
+            max-width: 100%;
+            height: auto;
+        }
+
+        .btn {
+            display: inline-block;
+            background-color: #602935; /* Granate */
+            color: #ffffff; /* Blanco */
+            padding: 10px 20px;
+            text-decoration: none;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            background-color: #4b1e29; /* Tonos más oscuros */
+        }
+    </style>
+  </head>
+
+  <body>
+
+ 
+  
+    <div class="container">
+        <center><img class="img-circle" src="{% static '/img/LOGO.jpg' %}" width="100px" height="100px" align=""></center>
+        <h2>Bienvenido, {{ user.username }}</h2>
+        <a href="{% url 'generar_qr' %}" class="btn">Generar Código QR</a>
+        <a href="{% url 'escanear_qr' %}" class="btn">Revisar registro</a>
+    </div>
+
+
+<!-- js placed at the end of the document so the pages load faster -->
+<script src="{% static 'js/jquery.js' %}" ></script>
+<script src="{% static 'js/bootstrap.min.js' %}" ></script>
+
+<!--BACKSTRETCH-->
+<!-- You can use an image of whatever size. This script will stretch to fit in any screen size.-->
+<script type="text/javascript" src="{% static 'js/jquery.backstretch.min.js' %}" ></script>
+<script>
+    $.backstretch("{% static 'img/2.jpg' %}", {speed: 500});
+</script>
+
+
+</body>
+</html> {% endcomment %}
+
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="Dashboard">
+    <meta name="keyword" content="Dashboard, Bootstrap, Admin, Template, Theme, Responsive, Fluid, Retina">
+
+    <title>DASHGUM - Bootstrap Admin Template</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="{% static 'css/bootstrap.css' %}" rel="stylesheet">
+    <!-- External CSS -->
+    <link href="{% static 'font-awesome/css/font-awesome.css' %}" rel="stylesheet" />
+    <!-- Custom styles for this template -->
+    <link href="{% static 'css/style.css' %}" rel="stylesheet">
+    <link href="{% static 'css/style-responsive.css' %}" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <center><img class="img-circle" src="{% static 'img/LOGO.jpg' %}" width="100px" height="100px" align=""></center>
+        <h2>Bienvenido, {{ user.username }}</h2>
+        <a href="{% url 'generar_qr' %}" class="btn">Generar Código QR</a>
+        <a href="{% url 'escanear_qr' %}" class="btn">Revisar registro</a>
+    </div>
+
+    <!-- js placed at the end of the document so the pages load faster -->
+    <script src="{% static 'js/jquery.js' %}" ></script>
+    <script src="{% static 'js/bootstrap.min.js' %}" ></script>
+</body>
+</html>
