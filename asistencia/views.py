@@ -114,7 +114,11 @@ def generar_qr_view(request):
         border=4,
     )
 
-    qr.add_data(f'http://127.0.0.1:8000/generar_qr/{usuario_id}')
+    # Construir la URL dinámica
+    domain = 'https://controlasistencias-ykec.onrender.com' or 'http://127.0.0.1:8000'
+    qr_url = f'{domain}/generar_qr/{usuario_id}'
+    
+    qr.add_data(qr_url)
     qr.make(fit=True)
 
     img = qr.make_image(fill='black', back_color='white')
