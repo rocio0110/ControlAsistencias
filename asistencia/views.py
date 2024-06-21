@@ -8,7 +8,8 @@ from django.utils import timezone
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth import login
 import qrcode
-
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
 from .models import Usuarios, Asistencia  # Asegúrate de importar tus modelos personalizados
 from .forms import UsuarioForm  # Asumiendo que has creado un formulario para el modelo Usuarios
 
@@ -82,9 +83,11 @@ class Index(LoginRequiredMixin, View):
     def get(self, request):
         return render(request, 'index.html')
 
+
 class BasicTable(LoginRequiredMixin, View):
     def get(self, request):
         return render(request, 'basic_table.html')
+
 
 class ResponsiveTable(LoginRequiredMixin, View):
     def get(self, request):
@@ -99,26 +102,33 @@ class LockScreen(View):
 
 @login_required
 def generar_qr_view(request):
-    if request.method == 'POST':
-        usuario_id = request.POST.get('usuario_id', '')
+    # Obtener detalles del usuario autenticado
+    usuario = request.user
+    usuario_id = usuario.id
+    nombre_usuario = usuario.username  # o cualquier otro atributo como usuario.get_full_name()
 
-        qr = qrcode.QRCode(
-            version=1,
-            error_correction=qrcode.constants.ERROR_CORRECT_L,
-            box_size=10,
-            border=4,
-        )
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
+    )
 
-        qr.add_data(f'http://127.0.0.1:8000/generar_qr/{usuario_id}')
-        qr.make(fit=True)
+    qr.add_data(f'http://127.0.0.1:8000/generar_qr/{usuario_id}')
+    qr.make(fit=True)
 
-        img = qr.make_image(fill='black', back_color='white')
+    img = qr.make_image(fill='black', back_color='white')
 
-        response = HttpResponse(content_type='image/png')
-        img.save(response, 'PNG')
-        return response
+    buffer = BytesIO()
+    img.save(buffer, 'PNG')
+    buffer.seek(0)
 
-    return render(request, 'qr.html')
+    # Generar el nombre del archivo usando el nombre del usuario
+    file_name = f'qr_codes/{nombre_usuario}_{usuario_id}.png'
+    file_path = default_storage.save(file_name, ContentFile(buffer.read()))
+    qr_code_url = default_storage.url(file_path)
+
+    return render(request, 'qr.html', {'qr_code_url': qr_code_url})
 
 
 @login_required
