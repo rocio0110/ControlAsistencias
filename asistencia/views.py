@@ -12,7 +12,7 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from .models import Usuarios, Asistencia  # Asegúrate de importar tus modelos personalizados
 from .forms import UsuarioForm  # Asumiendo que has creado un formulario para el modelo Usuarios
-
+import datetime
 from io import BytesIO
 import base64
 
@@ -102,6 +102,8 @@ class LockScreen(View):
 
 # Otras vistas
 
+# @login_required
+
 @login_required
 def generar_qr_view(request):
     # Obtener detalles del usuario autenticado
@@ -109,6 +111,7 @@ def generar_qr_view(request):
     usuario_id = usuario.id
     nombre_usuario = usuario.username  # o cualquier otro atributo como usuario.get_full_name()
 
+    # Generar el código QR
     qr = qrcode.QRCode(
         version=1,
         error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -116,9 +119,9 @@ def generar_qr_view(request):
         border=4,
     )
 
-    # Construir la URL dinámica
+    # Construir la URL dinámica que incluye la ruta para registrar la asistencia
     domain = settings.RENDER_EXTERNAL_HOSTNAME or 'http://127.0.0.1:8000'
-    qr_url = f'{domain}/generar_qr/{usuario_id}'
+    qr_url = f'{domain}/registrar_asistencia/{usuario_id}'
     
     qr.add_data(qr_url)
     qr.make(fit=True)
@@ -138,6 +141,12 @@ def generar_qr_view(request):
 
 
 @login_required
+def entrada_exitosa_view(request, asistencia_id):
+    asistencia = get_object_or_404(Asistencia, id=asistencia_id)
+    return render(request, 'entrada_exitosa.html', {'asistencia': asistencia})
+
+
+@login_required
 def escanear_qr_view(request):
     if request.method == 'POST':
         usuario_id = request.POST.get('usuario_id', '')
@@ -151,3 +160,13 @@ def escanear_qr_view(request):
             return HttpResponse('Asistencia no encontrada.')
 
     return render(request, 'escanear_qr.html')
+
+
+@login_required
+def registrar_asistencia_view(request, usuario_id):
+    # Registrar la entrada en la base de datos
+    asistencia = Asistencia.objects.create(
+        usuario_id=usuario_id,
+        fecha_entrada=datetime.datetime.now(),
+    )
+    return redirect('entrada_exitosa', asistencia_id=asistencia.id)

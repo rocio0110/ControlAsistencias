@@ -1,3 +1,77 @@
+{% comment %} <!-- templates/entrada_exitosa.html -->
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Entrada Exitosa</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #ffffff; /* Blanco */
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            text-align: center;
+            background-color: #ACADAD; /* Gris */
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        h2 {
+            color: #B08A5B; /* Café */
+        }
+
+        p {
+            color: #333; /* Gris oscuro */
+            margin-top: 10px;
+        }
+
+        .btn {
+            display: inline-block;
+            background-color: #602935; /* Granate */
+            color: #ffffff; /* Blanco */
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .btn:hover {
+            background-color: #4b1e29; /* Tonos más oscuros */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Registro de Asistencia Exitoso</h2>
+        <p>Fecha y hora: {{ asistencia.fecha_entrada }}</p>
+        <a href="{% url 'home' %}" class="btn">Volver al inicio</a>
+    </div>
+
+    <!-- js placed at the end of the document so the pages load faster -->
+    <script src="{% static 'js/jquery.js' %}" ></script>
+    <script src="{% static 'js/bootstrap.min.js' %}" ></script>
+
+    <!--BACKSTRETCH-->
+    <!-- You can use an image of whatever size. This script will stretch to fit in any screen size.-->
+    <script type="text/javascript" src="{% static 'js/jquery.backstretch.min.js' %}" ></script>
+    <script>
+        $.backstretch("{% static 'img/2.jpg' %}", {speed: 500});
+    </script>
+
+</body>
+</html> {% endcomment %}
 <!-- templates/entrada_exitosa.html -->
 {% load static %}
 <!DOCTYPE html>
