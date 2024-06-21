@@ -1,8 +1,9 @@
-<!-- templates/login.html -->
 {% load static %}
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
     <link rel="shortcut icon" href="{% static 'img/LOGO.JPG' %}" type="image/x-icon">
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
@@ -20,7 +21,7 @@
 
         .container {
             text-align: center;
-            background-color: #ffffff; /* Gris */
+            background-color: #ffffff; /* Blanco */
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
@@ -30,6 +31,7 @@
 
         h2 {
             color: #B08A5B; /* Café */
+            margin-bottom: 20px;
         }
 
         form {
@@ -42,6 +44,7 @@
             margin-bottom: 10px;
             border-radius: 5px;
             border: 1px solid #ccc;
+            box-sizing: border-box; /* Asegura que el padding no incremente el ancho */
         }
 
         button {
@@ -53,6 +56,7 @@
             cursor: pointer;
             transition: background-color 0.3s ease;
             margin-top: 20px;
+            width: 100%; /* Ocupa todo el ancho disponible */
         }
 
         button:hover {
@@ -74,36 +78,48 @@
             border-radius: 5px;
             text-decoration: none;
             transition: background-color 0.3s ease;
+            width: 100%; /* Ocupa todo el ancho disponible */
+            box-sizing: border-box; /* Asegura que el padding no incremente el ancho */
         }
 
         .back-link:hover {
             background-color: #4b1e29; /* Tonos más oscuros */
         }
+
+        .img-logo {
+            display: block;
+            margin: 0 auto;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%; /* Para que la imagen sea circular */
+            object-fit: cover; /* Ajusta la imagen dentro del contenedor */
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <center><img class="img-circle" src="{% static 'img/LOGO.jpg' %}" width="100px" height="100px" align=""></center>
-        <h2>Login</h2>
-        <form method="post">
-            {% csrf_token %}
-            {{ form.as_p }}
-            <button type="submit">Login</button>
-        </form>
-        {% if error %}
-            <p class="error">{{ error }}</p>
-        {% endif %}
-        <a href="{% url 'home' %}" class="back-link">Volver al inicio</a>
-    </div>
-    <!-- js placed at the end of the document so the pages load faster -->
-    <script src="{% static 'js/jquery.js' %}"></script>
-    <script src="{% static 'js/bootstrap.min.js' %}"></script>
+<div class="container">
+    <img class="img-logo" src="{% static 'img/LOGO.jpg' %}" alt="Logo">
+    <h2>Login</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Login</button>
+    </form>
+    {% if error %}
+        <p class="error">{{ error }}</p>
+    {% endif %}
 
-    <!--BACKSTRETCH-->
-    <!-- You can use an image of whatever size. This script will stretch to fit in any screen size.-->
-    <script type="text/javascript" src="{% static 'js/jquery.backstretch.min.js' %}"></script>
-    <script>
-        $.backstretch("{% static 'img/2.jpg' %}", {speed: 500});
-    </script>
+</div>
+
+<!-- JavaScript al final del documento para cargar las páginas más rápido -->
+<script src="{% static 'js/jquery.js' %}"></script>
+<script src="{% static 'js/bootstrap.min.js' %}"></script>
+
+<!-- BACKSTRETCH -->
+<script type="text/javascript" src="{% static 'js/jquery.backstretch.min.js' %}"></script>
+<script>
+    $.backstretch("{% static 'img/2.jpg' %}", {speed: 500});
+</script>
+
 </body>
 </html>
