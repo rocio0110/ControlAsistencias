@@ -16,6 +16,8 @@ from .forms import UsuarioForm  # Asumiendo que has creado un formulario para el
 from io import BytesIO
 import base64
 
+from django.conf import settings
+
 # Funciones de vista basadas en funciones
 
 def login_view(request):
@@ -115,7 +117,7 @@ def generar_qr_view(request):
     )
 
     # Construir la URL dinámica
-    domain = 'https://controlasistencias-ykec.onrender.com' or 'http://127.0.0.1:8000'
+    domain = settings.RENDER_EXTERNAL_HOSTNAME or 'http://127.0.0.1:8000'
     qr_url = f'{domain}/generar_qr/{usuario_id}'
     
     qr.add_data(qr_url)
