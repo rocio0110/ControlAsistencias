@@ -9,7 +9,7 @@
     <meta name="keyword" content="Dashboard, Bootstrap, Admin, Template, Theme, Responsive, Fluid, Retina">
 
     <title>Dashboard Admin</title>
-
+    <link rel="shortcut icon" href="{% static 'img/LOGO.JPG' %}" type="image/x-icon">
  <!-- Bootstrap core CSS -->
  <link href="{% static '/css/bootstrap.css' %}" rel="stylesheet">
  <!--external css-->
@@ -190,7 +190,7 @@
             </div>
             <div class="top-menu">
             	<ul class="nav pull-right top-menu">
-                    <li><a class="logout" href="login.html">cerrar sesión</a></li>
+                   <li><a class="logout" href="{% url 'login' %}">cerrar sesión</a></li>
             	</ul>
             </div>
         </header>
@@ -221,9 +221,9 @@
                           <span>Asistencia</span>
                       </a>
                       <ul class="sub">
-                          <li><a  href="{% url 'generar_qr' %}">Asistencia</a></li>
-                          <li><a  href="{% url 'lista_usuarios' %}">Buttons</a></li>
-                          <li><a  href="panels.html">Panels</a></li>
+                          <li><a  href="{% url 'agregar_usuario' %}">Agregar Usuarios</a></li>
+                          <li><a  href="{% url 'lista_usuarios' %}">lista de ususarios</a></li>
+
                       </ul>
                   </li>
 
