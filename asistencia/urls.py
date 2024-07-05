@@ -15,6 +15,5 @@ urlpatterns = [
     path('entrada_exitosa/<int:asistencia_id>/', views.entrada_exitosa_view, name='entrada_exitosa'),
     path('registrar_asistencia/<int:usuario_id>/', views.registrar_asistencia_view, name='registrar_asistencia'),
     path('', LockScreen.as_view(), name='lock_screen'),
-    path('index/', views.Index.as_view(), name='index'),
-    
+    path('index/', views.Index.as_view(), name='index') 
 ]
