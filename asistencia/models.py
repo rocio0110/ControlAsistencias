@@ -1,13 +1,12 @@
-# Importaciones necesarias
+# models.py
+
 from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import User
-# Función para crear automáticamente un usuario de Django después de guardar un Usuario
+from django.utils import timezone
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-
-# Modelo para la información personal de Usuarios
 class Usuarios(models.Model):
     # Campos de información personal
     nombre = models.CharField(max_length=100)
@@ -25,9 +24,17 @@ class Usuarios(models.Model):
 
     # Horas realizadas
     horas_realizadas = models.IntegerField(default=0)  # Se actualizará según las horas realizadas
+    horas_requeridas = models.IntegerField()  # Horas requeridas para el servicio
 
     def __str__(self):
         return f"{self.nombre} {self.apellido_paterno} {self.apellido_materno}"
+
+    def save(self, *args, **kwargs):
+        if self.tipo_servicio == 'SS':
+            self.horas_requeridas = 480
+        elif self.tipo_servicio == 'R':
+            self.horas_requeridas = 500
+        super().save(*args, **kwargs)
 
 @receiver(post_save, sender=Usuarios)
 def create_user_profile(sender, instance, created, **kwargs):
@@ -41,7 +48,6 @@ def create_user_profile(sender, instance, created, **kwargs):
         instance.user = user
         instance.save()
 
-# Modelos de Asistencia y RegistroEntrada
 class Asistencia(models.Model):
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     fecha_entrada = models.DateTimeField(auto_now_add=True)
@@ -56,4 +62,4 @@ class RegistroEntrada(models.Model):
 
     def __str__(self):
         return f"{self.usuario.username} - {self.fecha_hora_entrada}"
-
+    

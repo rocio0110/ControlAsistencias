@@ -7,18 +7,15 @@ from django.contrib import messages
 from django.utils import timezone
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth import login
-import qrcode
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
-from .models import Usuarios, Asistencia  # Asegúrate de importar tus modelos personalizados
-from .forms import UsuarioForm  # Asumiendo que has creado un formulario para el modelo Usuarios
-import datetime
-from io import BytesIO
-import base64
-
+from django.core.mail import send_mail
 from django.conf import settings
-
-# Funciones de vista basadas en funciones
+from .models import Usuarios, Asistencia
+from .forms import UsuarioForm
+import qrcode
+from io import BytesIO
+from datetime import datetime
 
 def login_view(request):
     if request.method == 'POST':
@@ -34,7 +31,6 @@ def login_view(request):
 
 @login_required
 def home_view(request):
-    # Lógica para la vista de inicio si es necesario
     return render(request, 'home.html')
 
 def agregar_usuario(request):
@@ -48,7 +44,7 @@ def agregar_usuario(request):
         form = UsuarioForm()
     return render(request, 'agregar_usuario.html', {'form': form})
 
-# @login_required
+@login_required
 def lista_usuarios(request):
     usuarios = Usuarios.objects.all()
     query = request.GET.get('q')
@@ -78,18 +74,13 @@ def eliminar_usuario(request, pk):
         return redirect('lista_usuarios')
     return render(request, 'eliminar_usuario.html', {'usuario': usuario})
 
-
-# Vistas basadas en clases
-
 class Index(LoginRequiredMixin, View):
     def get(self, request):
         return render(request, 'index.html')
 
-
 class BasicTable(LoginRequiredMixin, View):
     def get(self, request):
         return render(request, 'basic_table.html')
-
 
 class ResponsiveTable(LoginRequiredMixin, View):
     def get(self, request):
@@ -99,19 +90,12 @@ class LockScreen(View):
     def get(self, request):
         return render(request, 'lock_screen.html')
 
-
-# Otras vistas
-
-# @login_required
-
 @login_required
 def generar_qr_view(request):
-    # Obtener detalles del usuario autenticado
     usuario = request.user
     usuario_id = usuario.id
-    nombre_usuario = usuario.username  # o cualquier otro atributo como usuario.get_full_name()
+    nombre_usuario = usuario.username
 
-    # Generar el código QR
     qr = qrcode.QRCode(
         version=1,
         error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -119,7 +103,6 @@ def generar_qr_view(request):
         border=4,
     )
 
-    # Construir la URL dinámica que incluye la ruta para registrar la asistencia
     domain = settings.RENDER_EXTERNAL_HOSTNAME or 'http://127.0.0.1:8000'
     qr_url = f'{domain}/registrar_asistencia/{usuario_id}'
     
@@ -132,19 +115,16 @@ def generar_qr_view(request):
     img.save(buffer, 'PNG')
     buffer.seek(0)
 
-    # Generar el nombre del archivo usando el nombre del usuario
     file_name = f'qr_codes/{nombre_usuario}_{usuario_id}.png'
     file_path = default_storage.save(file_name, ContentFile(buffer.read()))
     qr_code_url = default_storage.url(file_path)
 
     return render(request, 'qr.html', {'qr_code_url': qr_code_url})
 
-
 @login_required
 def entrada_exitosa_view(request, asistencia_id):
     asistencia = get_object_or_404(Asistencia, id=asistencia_id)
     return render(request, 'entrada_exitosa.html', {'asistencia': asistencia})
-
 
 @login_required
 def escanear_qr_view(request):
@@ -152,21 +132,59 @@ def escanear_qr_view(request):
         usuario_id = request.POST.get('usuario_id', '')
 
         try:
-            asistencia = Asistencia.objects.get(usuario_id=usuario_id)
-            asistencia.fecha_salida = timezone.now()
-            asistencia.save()
-            return redirect('entrada_exitosa', asistencia_id=asistencia.id)
+            # Filtrar todas las asistencias activas del usuario
+            asistencias_activas = Asistencia.objects.filter(usuario_id=usuario_id, fecha_salida__isnull=True)
+
+            # Asegúrate de que solo haya una asistencia activa (debería ser solo una)
+            if asistencias_activas.exists():
+                asistencia_actual = asistencias_activas.first()
+
+                # Actualizar la fecha de salida y guardar la asistencia
+                asistencia_actual.fecha_salida = timezone.now()
+                asistencia_actual.save()
+
+                # Calcular horas trabajadas y actualizar usuario
+                horas_trabajadas = (asistencia_actual.fecha_salida - asistencia_actual.fecha_entrada).total_seconds() / 3600
+                usuario = asistencia_actual.usuario
+                usuario.horas_realizadas += horas_trabajadas
+                usuario.save()
+
+                # Enviar correo electrónico
+                enviar_correo_asistencia(usuario)
+
+                # Obtener todas las asistencias del usuario
+                todas_asistencias = Asistencia.objects.filter(usuario_id=usuario_id)
+
+                return render(request, 'escanear_qr.html', {'asistencia_actual': asistencia_actual, 'todas_asistencias': todas_asistencias})
+            else:
+                error = 'No se encontró ninguna asistencia activa para este usuario.'
+                return render(request, 'escanear_qr.html', {'error': error})
+        
         except Asistencia.DoesNotExist:
-            return HttpResponse('Asistencia no encontrada.')
+            error = 'Asistencia no encontrada.'
+            return render(request, 'escanear_qr.html', {'error': error})
 
     return render(request, 'escanear_qr.html')
 
 
 @login_required
 def registrar_asistencia_view(request, usuario_id):
-    # Registrar la entrada en la base de datos
+    usuario = get_object_or_404(Usuarios, id=usuario_id)
     asistencia = Asistencia.objects.create(
-        usuario_id=usuario_id,
-        fecha_entrada=datetime.datetime.now(),
+        usuario=usuario,
+        fecha_entrada=timezone.now(),
     )
+
+    # Enviar correo electrónico
+    enviar_correo_asistencia(usuario)
+
     return redirect('entrada_exitosa', asistencia_id=asistencia.id)
+
+def enviar_correo_asistencia(usuario):
+    send_mail(
+        'Registro de Asistencia Exitoso',
+        f'Hola {usuario.username}, tu asistencia ha sido registrada exitosamente.',
+        settings.DEFAULT_FROM_EMAIL,
+        [usuario.email],
+        fail_silently=False,
+    )

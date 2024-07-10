@@ -1,4 +1,3 @@
-<!-- templates/escanear_qr.html -->
 {% load static %}
 <!DOCTYPE html>
 <html>
@@ -17,7 +16,7 @@
             align-items: center;
             height: 100vh;
         }
-
+    
         .container {
             text-align: center;
             background-color:  #ffffff; /* Gris */
@@ -27,15 +26,15 @@
             max-width: 400px;
             width: 100%;
         }
-
+    
         h2 {
             color: #B08A5B; /* Café */
         }
-
+    
         form {
             margin-top: 20px;
         }
-
+    
         input[type="text"] {
             width: 100%;
             padding: 10px;
@@ -43,7 +42,7 @@
             border-radius: 5px;
             border: 1px solid #ccc;
         }
-
+    
         button {
             background-color: #602935; /* Granate */
             color: #ffffff; /* Blanco */
@@ -54,16 +53,16 @@
             transition: background-color 0.3s ease;
             margin-top: 20px;
         }
-
+    
         button:hover {
             background-color: #4b1e29; /* Tonos más oscuros */
         }
-
+    
         .error {
             color: red;
             margin-top: 10px;
         }
-
+    
         .back-link {
             display: inline-block;
             margin-top: 20px;
@@ -75,11 +74,12 @@
             text-decoration: none;
             transition: background-color 0.3s ease;
         }
-
+    
         .back-link:hover {
             background-color: #4b1e29; /* Tonos más oscuros */
         }
     </style>
+    
 </head>
 <body>
     <div class="container">
@@ -87,25 +87,32 @@
         <h2>Registra tu entrada</h2>
         <form method="post">
             {% csrf_token %}
-            <input type="text" name="asistencia_id" placeholder="ID de Asistencia">
+            <input type="text" name="usuario_id" placeholder="ID de Usuario">
             <button type="submit">Revisar Asistencia</button>
         </form>
         {% if error %}
             <p class="error">{{ error }}</p>
         {% endif %}
+
+        {% if asistencia_actual %}
+            <h3>Última asistencia registrada:</h3>
+            <p>Fecha de entrada: {{ asistencia_actual.fecha_entrada }}</p>
+            <p>Fecha de salida: {{ asistencia_actual.fecha_salida }}</p>
+            <!-- Otros detalles de la asistencia actual -->
+
+            <h3>Todas las asistencias registradas:</h3>
+            <ul>
+                {% for asistencia in todas_asistencias %}
+                    <li>Fecha de entrada: {{ asistencia.fecha_entrada }}</li>
+                    <li>Fecha de salida: {{ asistencia.fecha_salida }}</li>
+                    <!-- Otros detalles de cada asistencia -->
+                {% endfor %}
+            </ul>
+        {% endif %}
+
         <a href="{% url 'home' %}" class="back-link">Volver al inicio</a>
     </div>
-    <!-- js placed at the end of the document so the pages load faster -->
-    <script src="{% static 'js/jquery.js' %}" ></script>
-    <script src="{% static 'js/bootstrap.min.js' %}" ></script>
 
-    <!--BACKSTRETCH-->
-    <!-- You can use an image of whatever size. This script will stretch to fit in any screen size.-->
-    <script type="text/javascript" src="{% static 'js/jquery.backstretch.min.js' %}" ></script>
-    <script>
-        $.backstretch("{% static 'img/2.jpg' %}", {speed: 500});
-    </script>
-
-
+    <!-- Scripts anteriores... -->
 </body>
 </html>
