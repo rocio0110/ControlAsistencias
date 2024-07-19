@@ -85,7 +85,15 @@ class BasicTable(LoginRequiredMixin, View):
 class ResponsiveTable(LoginRequiredMixin, View):
     def get(self, request):
         return render(request, 'responsive_table.html')
-
+    
+class GestionarUsuarios(LoginRequiredMixin, View):
+    def get(self, request):
+        return render(request, 'gestionar_usuarios.html')
+    
+class Calendar(LoginRequiredMixin, View):
+    def get(self, request):
+        return render(request, 'calendar.html')
+    
 class LockScreen(View):
     def get(self, request):
         return render(request, 'lock_screen.html')
@@ -188,3 +196,28 @@ def enviar_correo_asistencia(usuario):
         [usuario.email],
         fail_silently=False,
     )
+
+
+from django.shortcuts import render, get_object_or_404
+from .models import Asistencia
+
+def revisar_asistencia(request):
+    if request.method == 'POST':
+        nombre_usuario = request.POST.get('nombre_usuario')
+
+        if not nombre_usuario:
+            error = "Por favor, ingresa un nombre de usuario válido."
+            return render(request, 'escanear_qr.html', {'error': error})
+
+        try:
+            # Buscar la asistencia por nombre de usuario
+            asistencia_actual = Asistencia.objects.get(usuario__nombre=nombre_usuario)
+            todas_asistencias = Asistencia.objects.filter(usuario__nombre=nombre_usuario)
+            
+            return render(request, 'escanear_qr.html', {'asistencia_actual': asistencia_actual, 'todas_asistencias': todas_asistencias})
+
+        except Asistencia.DoesNotExist:
+            error = f"No se encontró asistencia para el usuario con nombre {nombre_usuario}."
+            return render(request, 'escanear_qr.html', {'error': error})
+
+    return render(request, 'escanear_qr.html')

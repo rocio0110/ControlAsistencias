@@ -86,9 +86,10 @@
         <h2>Registra tu entrada</h2>
         <form method="post">
             {% csrf_token %}
-            <input type="text" name="usuario_id" placeholder="ID de Usuario">
+            <input type="text" name="nombre_usuario" placeholder="Nombre de Usuario">
             <button type="submit">Revisar Asistencia</button>
         </form>
+        
         {% if error %}
             <p class="error">{{ error }}</p>
         {% endif %}

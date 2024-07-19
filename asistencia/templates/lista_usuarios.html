@@ -186,6 +186,8 @@
                   <th>Nombre</th>
                   <th>Apellido Paterno</th>
                   <th>Apellido Materno</th>
+                  <th>Correo electronico</th>
+                  <th>Telefono</th>
                   <th>Tipo de Servicio</th>
                   <th>Horas Debe Cubrir</th>
                   <th>Horas Cubiertas</th>
@@ -200,9 +202,11 @@
                   <td>{{ usuario.nombre }}</td>
                   <td>{{ usuario.apellido_paterno }}</td>
                   <td>{{ usuario.apellido_materno }}</td>
+                  <td>{{ usuario.correo_electronico }}</td>
+                  <td>{{ usuario.telefono }}</td>
                   <td>{{ usuario.get_tipo_servicio_display }}</td>
-                  <td>{{ usuario.horas_debe_cubrir }}</td>
-                  <td>{{ usuario.horas_cubiertas }}</td>
+                  <td>{{ usuario.horas_requeridas }}</td>
+                  <td>{{ usuario.horas_realizadas }}</td>
                   <td>{{ usuario.horas_faltantes }}</td>
                   <td>
                     <a href="{% url 'editar_usuario' usuario.pk %}" class="btn btn-warning btn-sm">Editar</a>
