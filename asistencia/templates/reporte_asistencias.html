@@ -8,7 +8,7 @@
   <meta name="author" content="Dashboard">
   <meta name="keyword" content="Dashboard, Bootstrap, Admin, Template, Theme, Responsive, Fluid, Retina">
 
-  <title>Agregar Usuario</title>
+  <title>Lista Usuarios</title>
   <link rel="shortcut icon" href="{% static 'img/LOGO.JPG' %}" type="image/x-icon">
 
   <!-- Bootstrap core CSS -->
@@ -23,6 +23,8 @@
   <link href="{% static 'css/style.css' %}" rel="stylesheet">
   <link href="{% static 'css/style-responsive.css' %}" rel="stylesheet">
 
+  <script src="{% static 'js/chart-master/Chart.js' %}"></script>
+
   <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
   <!--[if lt IE 9]>
     <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
@@ -31,34 +33,84 @@
 </head>
 
 <body>
-  <style>/* static/css/custom_styles.css */
-      .container {
-          background-color: #ffffff; /* Fondo blanco */
-          border: 1px solid #ACADAD; /* Borde gris */
-          padding: 20px;
-          border-radius: 10px;
-          box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-      }
-      
-      .container h2 {
-          color: #602935; /* Color del título */
-          font-weight: bold;
-      }
-      
-      .container form {
-          margin-top: 20px;
-      }
-      
-      .container .btn-primary {
-          background-color: #B08A5B; /* Color del botón */
-          border-color: #B08A5B;
-      }
-      
-      .container .btn-primary:hover {
-          background-color: #602935; /* Color del botón al pasar el ratón */
-          border-color: #602935;
-      }
-  </style>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #ffffff;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            text-align: center;
+            background-color: #ACADAD;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            width: 100%;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        table, th, td {
+            border: 1px solid #333;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #B08A5B;
+            color: #ffffff;
+        }
+
+        .btn {
+            display: inline-block;
+            background-color: #602935;
+            color: #ffffff;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .btn:hover {
+            background-color: #4b1e29;
+        }
+
+        .filter-form {
+            margin-bottom: 20px;
+        }
+
+        .filter-form input[type="date"] {
+            padding: 5px;
+        }
+
+        .filter-form button {
+            padding: 5px 10px;
+            background-color: #602935;
+            color: #ffffff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .filter-form button:hover {
+            background-color: #4b1e29;
+        }
+    </style>
 
   <section id="container">
     <!-- TOP BAR CONTENT & NOTIFICATIONS -->
@@ -128,34 +180,75 @@
 
                   </ul>
               </li>
+        
+             
+
           </ul>
           <!-- sidebar menu end-->
       </div>
   </aside>
   <!--sidebar end-->
+
     <!-- MAIN CONTENT -->
     <!--main content start-->
     <section id="main-content">
       <section class="wrapper">
-        <div class="container">
-          <h2>Agregar Usuario</h2>
-          <form action="" method="post">
-            {% csrf_token %}
-            {{ form.as_p }}
-            <button type="submit" class="btn btn-primary">Agregar</button>
-          </form>
-        </div>
-      </section>
-    </section>
-    <!--main content end-->
-  </section>
+    <div class="container">
+        <h2>Reporte de Asistencias</h2>
 
-  <!-- Scripts -->
-  <script src="{% static 'js/jquery.js' %}"></script>
-  <script src="{% static 'js/bootstrap.min.js' %}"></script>
-  <script class="include" type="text/javascript" src="{% static 'js/jquery.dcjqaccordion.2.7.js' %}"></script>
-  <script src="{% static 'js/jquery.scrollTo.min.js' %}"></script>
-  <script src="{% static 'js/jquery.nicescroll.js' %}" type="text/javascript"></script>
-  <script src="{% static 'js/common-scripts.js' %}"></script>
+        <form class="filter-form" method="get">
+            <label for="fecha_inicio">Fecha Inicio:</label>
+            <input type="date" id="fecha_inicio" name="fecha_inicio" value="{{ request.GET.fecha_inicio }}">
+            <label for="fecha_fin">Fecha Fin:</label>
+            <input type="date" id="fecha_fin" name="fecha_fin" value="{{ request.GET.fecha_fin }}">
+            <button type="submit">Filtrar</button>
+        </form>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre Usuario</th>
+                    <th>Fecha de Entrada</th>
+                    <th>Fecha de Salida</th>
+                    <th>Horas Trabajadas</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for asistencia in asistencias %}
+                    <tr>
+                        <td>{{ asistencia.id }}</td>
+                        <td>{{ asistencia.usuario.nombre }}</td>
+                        <td>{{ asistencia.fecha_entrada }}</td>
+                        <td>{{ asistencia.fecha_salida }}</td>
+                        <td>
+                            {% if asistencia.horas_trabajadas %}
+                                {{ asistencia.horas_trabajadas|floatformat:2 }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <a href="{% url 'reporte_pdf' %}" class="btn">Descargar Reporte PDF</a>
+
+
+        <a href="{% url 'index' %}" class="btn">Volver al inicio</a>
+
+    </div>
+
+    <!-- js placed at the end of the document so the pages load faster -->
+    <script src="{% static 'js/jquery.js' %}" ></script>
+    <script src="{% static 'js/bootstrap.min.js' %}" ></script>
+
+    <!--BACKSTRETCH-->
+    <!-- You can use an image of whatever size. This script will stretch to fit in any screen size.-->
+    <script type="text/javascript" src="{% static 'js/jquery.backstretch.min.js' %}" ></script>
+    <script>
+        $.backstretch("{% static 'img/2.jpg' %}", {speed: 500});
+    </script>
+
 </body>
 </html>

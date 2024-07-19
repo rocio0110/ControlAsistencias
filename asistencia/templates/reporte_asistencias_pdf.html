@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Reporte de Asistencias</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        h2 {
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid #333;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #B08A5B;
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+    <h2>Reporte de Asistencias</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre Usuario</th>
+                <th>Fecha de Entrada</th>
+                <th>Fecha de Salida</th>
+                <th>Horas Trabajadas</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for asistencia in asistencias %}
+                <tr>
+                    <td>{{ asistencia.id }}</td>
+                    <td>{{ asistencia.usuario.nombre }}</td>
+                    <td>{{ asistencia.fecha_entrada }}</td>
+                    <td>{{ asistencia.fecha_salida }}</td>
+                    <td>
+                        {% if asistencia.horas_trabajadas %}
+                            {{ asistencia.horas_trabajadas|floatformat:2 }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

@@ -19,5 +19,7 @@ urlpatterns = [
     path('escanear/', escanear_qr_view, name='escanear_qr'), 
     path('gestionar_usuarios/', GestionarUsuarios.as_view(), name='gestionar_usuarios'), 
     path('calendar/', Calendar.as_view(), name='calendar'), 
+    path('reporte/', generar_reporte_view, name='reporte'),
+    path('reporte/pdf/', generar_reporte_pdf_view, name='reporte_pdf'),
     
 ]

@@ -221,3 +221,32 @@ def revisar_asistencia(request):
             return render(request, 'escanear_qr.html', {'error': error})
 
     return render(request, 'escanear_qr.html')
+
+from django.template.loader import get_template
+from django.http import HttpResponse
+from xhtml2pdf import pisa
+from .models import Asistencia
+
+def generar_reporte_pdf_view(request):
+    asistencias = Asistencia.objects.all()
+    template_path = 'reporte_asistencias.html'
+    context = {'asistencias': asistencias}
+    
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="reporte_asistencias.pdf"'
+    
+    template = get_template(template_path)
+    html = template.render(context)
+    
+    pisa_status = pisa.CreatePDF(html, dest=response)
+    
+    if pisa_status.err:
+        return HttpResponse('Error al generar el PDF: %s' % pisa_status.err, status=500)
+    
+    return response
+
+@login_required
+def generar_reporte_view(request):
+    asistencias = Asistencia.objects.all()
+    context = {'asistencias': asistencias}
+    return render(request, 'reporte_asistencias.html', context)
