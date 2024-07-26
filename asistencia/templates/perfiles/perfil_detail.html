@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Detalle del Perfil</title>
+</head>
+<body>
+    <h1>Detalle del Perfil de {{ perfil.usuario.nombre_usuario }}</h1>
+    <p>Tipo de Servicio: {{ perfil.tipo_servicio }}</p>
+    <p>Horas Requeridas: {{ perfil.horas_requeridas }}</p>
+    <p>Horas Completadas: {{ perfil.horas_completadas }}</p>
+    <a href="{% url 'perfil_update' perfil.pk %}">Editar</a>
+    <form action="{% url 'perfil_delete' perfil.pk %}" method="post">
+        {% csrf_token %}
+        <button type="submit">Eliminar</button>
+    </form>
+    <a href="{% url 'perfil_list' %}">Volver a la lista</a>
+</body>
+</html>

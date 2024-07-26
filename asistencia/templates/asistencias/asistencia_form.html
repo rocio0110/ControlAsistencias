@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Formulario de Asistencia</title>
+</head>
+<body>
+    <h1>{{ form.instance.pk|yesno:"Editar Asistencia,Registrar Nueva Asistencia" }}</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Guardar</button>
+    </form>
+    <a href="{% url 'asistencia_list' %}">Cancelar</a>
+</body>
+</html>

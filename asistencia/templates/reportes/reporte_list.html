@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lista de Reportes</title>
+</head>
+<body>
+    <h1>Lista de Reportes</h1>
+    <a href="{% url 'reporte_create' %}">Crear Nuevo Reporte</a>
+    <ul>
+        {% for reporte in reportes %}
+        <li><a href="{% url 'reporte_detail' reporte.pk %}">{{ reporte.usuario.nombre_usuario }} - {{ reporte.fecha_generacion }}</a></li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

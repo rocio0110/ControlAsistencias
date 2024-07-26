@@ -1,0 +1,81 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="">
+  <meta name="author" content="Dashboard">
+  <meta name="keyword" content="Dashboard, Bootstrap, Admin, Template, Theme, Responsive, Fluid, Retina">
+
+  <title>lista de asistencia</title>
+  <link rel="shortcut icon" href="{% static 'img/LOGO.JPG' %}" type="image/x-icon">
+
+  <!-- Bootstrap core CSS -->
+  <link href="{% static 'css/bootstrap.css' %}" rel="stylesheet">
+  <!-- External CSS -->
+  <link href="{% static 'font-awesome/css/font-awesome.css' %}" rel="stylesheet" />
+  <link rel="stylesheet" type="text/css" href="{% static 'css/zabuto_calendar.css' %}">
+  <link rel="stylesheet" type="text/css" href="{% static 'js/gritter/css/jquery.gritter.css' %}" />
+  <link rel="stylesheet" type="text/css" href="{% static 'lineicons/style.css' %}">    
+
+  <!-- Custom styles for this template -->
+  <link href="{% static 'css/style.css' %}" rel="stylesheet">
+  <link href="{% static 'css/style-responsive.css' %}" rel="stylesheet">
+
+  <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+  <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+    <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+  <![endif]-->
+</head>
+
+<body>
+  <style>/* static/css/custom_styles.css */
+      .container {
+          background-color: #ffffff; /* Fondo blanco */
+          border: 1px solid #ACADAD; /* Borde gris */
+          padding: 20px;
+          border-radius: 10px;
+          box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+      }
+      
+      .container h2 {
+          color: #602935; /* Color del título */
+          font-weight: bold;
+      }
+      
+      .container form {
+          margin-top: 20px;
+      }
+      
+      .container .btn-primary {
+          background-color: #B08A5B; /* Color del botón */
+          border-color: #B08A5B;
+      }
+      
+      .container .btn-primary:hover {
+          background-color: #602935; /* Color del botón al pasar el ratón */
+          border-color: #602935;
+      }
+  </style>
+
+  <section id="container">
+    <h1>Lista de Asistencias</h1>
+    <a href="{% url 'asistencia_create' %}">Registrar Nueva Asistencia</a>
+    <ul>
+        {% for asistencia in asistencias %}
+        <li><a href="{% url 'asistencia_detail' asistencia.pk %}">{{ asistencia.usuario.nombre_usuario }} - {{ asistencia.fecha }}</a></li>
+        {% endfor %}
+    </ul>
+</section>
+
+<!-- Scripts -->
+<script src="{% static 'js/jquery.js' %}"></script>
+<script src="{% static 'js/bootstrap.min.js' %}"></script>
+<script class="include" type="text/javascript" src="{% static 'js/jquery.dcjqaccordion.2.7.js' %}"></script>
+<script src="{% static 'js/jquery.scrollTo.min.js' %}"></script>
+<script src="{% static 'js/jquery.nicescroll.js' %}" type="text/javascript"></script>
+<script src="{% static 'js/common-scripts.js' %}"></script>
+</body>
+</html>

@@ -1,0 +1,103 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle de Asistencia</title>
+    <link rel="shortcut icon" href="{% static 'img/LOGO.JPG' %}" type="image/x-icon">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #ffffff; /* Blanco */
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh; /* Asegura que ocupe al menos toda la altura del viewport */
+        }
+
+        .container {
+            text-align: center;
+            background-color: #ACADAD; /* Gris */
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 600px; /* Limita el ancho máximo */
+            width: 90%; /* Aprovecha el ancho disponible */
+            margin: 20px; /* Añade espacio alrededor del contenedor */
+        }
+
+        h1 {
+            color: #602935; /* Café */
+            margin-top: 0;
+        }
+
+        .details {
+            margin-top: 20px;
+            text-align: left;
+            background-color: #ffffff;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        p {
+            margin: 10px 0;
+        }
+
+        .btn {
+            display: inline-block;
+            background-color: #602935; /* Granate */
+            color: #ffffff; /* Blanco */
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .btn:hover {
+            background-color: #8B475D; /* Granate más oscuro */
+        }
+
+        .qr-code {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+                
+    <div class="container">
+        <h1>Detalle de Asistencia de {{ asistencia.usuario.nombre_usuario }}</h1>
+        <div class="details">
+            <p><strong>Fecha:</strong> {{ asistencia.fecha }}</p>
+            <p><strong>Hora de Entrada:</strong> {{ asistencia.hora_entrada }}</p>
+            <p><strong>Hora de Salida:</strong> {{ asistencia.hora_salida }}</p>
+            <p><strong>Código QR:</strong></p>
+            <div class="qr-code">
+                <img src="{% url 'generate_qr_code' asistencia.pk %}" alt="Código QR">
+            </div>
+            <p><strong>Asistencia Confirmada:</strong> {{ asistencia.asistencia_confirmada }}</p>
+        </div>
+        <a href="{% url 'asistencia_update' asistencia.pk %}" class="btn">Editar</a>
+        <form action="{% url 'asistencia_delete' asistencia.pk %}" method="post" style="display: inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn">Eliminar</button>
+        </form>
+        <a href="{% url 'asistencia_list' %}" class="btn">Volver a la lista</a>
+    </div>
+
+    <!-- JavaScript al final del documento para cargar las páginas más rápido -->
+    <script src="{% static 'js/jquery.js' %}"></script>
+    <script src="{% static 'js/bootstrap.min.js' %}"></script>
+
+    <!--BACKSTRETCH-->
+    <script type="text/javascript" src="{% static 'js/jquery.backstretch.min.js' %}"></script>
+    <script>
+        $.backstretch("{% static 'img/2.jpg' %}", {speed: 500});
+    </script>
+</body>
+</html>

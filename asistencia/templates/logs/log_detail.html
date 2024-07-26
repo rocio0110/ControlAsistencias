@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Detalle del Log de Actividad</title>
+</head>
+<body>
+    <h1>Detalle del Log de Actividad</h1>
+    <p>Usuario: {{ log.usuario.nombre_usuario }}</p>
+    <p>Acción: {{ log.accion }}</p>
+    <p>Marca de Tiempo: {{ log.marca_tiempo }}</p>
+    <a href="{% url 'log_list' %}">Volver a la lista</a>
+</body>
+</html>

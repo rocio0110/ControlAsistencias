@@ -105,10 +105,9 @@
         {{ form.as_p }}
         <button type="submit">Login</button>
     </form>
-    {% if error %}
-        <p class="error">{{ error }}</p>
+    {% if form.errors %}
+        <p class="error">{{ form.non_field_errors }}</p>
     {% endif %}
-
 </div>
 
 <!-- JavaScript al final del documento para cargar las páginas más rápido -->
