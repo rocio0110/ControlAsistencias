@@ -13,31 +13,12 @@ def generate_password(length=8):
     return password
 
 # Formulario para agregar usuarios
+
 class UsuarioForm(forms.ModelForm):
     class Meta:
         model = Usuario
-        fields = ['nombre', 'apellido_paterno', 'apellido_materno', 'telefono','tipo_servicio', 'correo_electronico']
+        fields = ['nombre', 'apellido_paterno', 'apellido_materno', 'telefono', 'correo_electronico','tipo_servicio']
 
-    def save(self, commit=True):
-        usuario = super().save(commit=False)
-
-        # Generar usuario y contraseña
-        usuario.username = f'{usuario.nombre.lower()}.{usuario.apellido_paterno.lower()[:2]}'
-        usuario.password = generate_password()
-        
-        if commit:
-            usuario.save()
-
-            # Enviar correo electrónico con las credenciales
-            send_mail(
-                'Tus credenciales de acceso',
-                f'Hola {usuario.nombre},\n\nTu usuario es: {usuario.username}\nTu contraseña es: {usuario.password}\n\nPor favor, cambia tu contraseña después de iniciar sesión.',
-                settings.DEFAULT_FROM_EMAIL,
-                [usuario.correo_electronico],
-                fail_silently=False,
-            )
-
-        return usuario
 
     # Validación para asegurar que el correo electrónico es único
     def clean_correo_electronico(self):

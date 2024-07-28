@@ -4,6 +4,8 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from datetime import timedelta
+from django.core.mail import send_mail
 
 class Usuario(models.Model):
     # Campos de información personal
@@ -12,7 +14,8 @@ class Usuario(models.Model):
     apellido_materno = models.CharField(max_length=100)
     telefono = models.CharField(max_length=20)
     correo_electronico = models.EmailField(max_length=255)
-    
+    fecha_registro = models.DateField(auto_now_add=True)  # Eliminar duplicado
+
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
 
     # Opciones de servicio
@@ -36,6 +39,11 @@ class Usuario(models.Model):
             self.horas_requeridas = 500
         super().save(*args, **kwargs)
 
+    @property
+    def fecha_estimada_conclusion(self):
+        dias_necesarios = (self.horas_requeridas - self.horas_realizadas) / 4  # Asumiendo 4 horas por día
+        return self.fecha_registro + timedelta(days=dias_necesarios)
+
 @receiver(post_save, sender=Usuario)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
@@ -48,6 +56,15 @@ def create_user_profile(sender, instance, created, **kwargs):
         instance.user = user
         instance.save()
 
+        # Enviar correo con usuario y contraseña
+        send_mail(
+            'Usuario creado',
+            f'Tu usuario es {username} y tu contraseña es {password}',
+            settings.DEFAULT_FROM_EMAIL,
+            [instance.correo_electronico],
+            fail_silently=False,
+        )
+
 class Asistencia(models.Model):
     usuario = models.ForeignKey(Usuario, on_delete=models.PROTECT)
     fecha_entrada = models.DateTimeField(auto_now_add=True)
@@ -56,12 +73,6 @@ class Asistencia(models.Model):
     def __str__(self):
         return f"{self.usuario.user.username} - {self.fecha_entrada}"
 
-class RegistroEntrada(models.Model):
-    usuario = models.ForeignKey(Usuario, on_delete=models.PROTECT)
-    fecha_hora_entrada = models.DateTimeField()
-
-    def __str__(self):
-        return f"{self.usuario.user.username} - {self.fecha_hora_entrada}"
 
 # from django.db import models
 # from django.contrib.auth.models import AbstractBaseUser, BaseUserManager

@@ -1,4 +1,3 @@
-
 from django.shortcuts import render, redirect, get_object_or_404, HttpResponse
 from django.urls import reverse
 from django.views.generic import View
@@ -15,8 +14,29 @@ from django.conf import settings
 from .forms import UsuarioForm
 import qrcode
 from io import BytesIO
-from datetime import datetime
+from datetime import datetime, timedelta
 from .models import Usuario, Asistencia
+
+@login_required
+def escanear_qr_view(request):
+    error = None
+    asistencia_actual = None
+    todas_asistencias = None
+
+    if request.method == 'POST':
+        usuario_id = request.POST.get('usuario_id')
+        try:
+            usuario = get_object_or_404(Usuario, id=usuario_id)
+            asistencia_actual = Asistencia.objects.filter(usuario=usuario, fecha_salida__isnull=True).first()
+            todas_asistencias = Asistencia.objects.filter(usuario=usuario).order_by('-fecha_entrada')
+        except Usuario.DoesNotExist:
+            error = "Usuario no encontrado"
+
+    return render(request, 'escanear_qr.html', {
+        'error': error,
+        'asistencia_actual': asistencia_actual,
+        'todas_asistencias': todas_asistencias,
+    })
 
 def login_view(request):
     if request.method == 'POST':
@@ -38,14 +58,24 @@ def agregar_usuario(request):
     if request.method == 'POST':
         form = UsuarioForm(request.POST)
         if form.is_valid():
-            form.save()
+            usuario = form.save()
+
+            # Enviar correo con usuario y contraseña
+            send_mail(
+                'Usuario creado',
+                f'Tu usuario es {usuario.user.username} y tu contraseña es {usuario.user.password}',
+                settings.DEFAULT_FROM_EMAIL,
+                [usuario.correo_electronico],
+                fail_silently=False,
+            )
+
             messages.success(request, 'Usuario agregado correctamente.')
             return redirect('lista_usuarios')
     else:
         form = UsuarioForm()
     return render(request, 'agregar_usuario.html', {'form': form})
 
-@login_required
+# @login_required
 def lista_usuarios(request):
     usuario = Usuario.objects.all()
     query = request.GET.get('q')
@@ -101,11 +131,10 @@ class LockScreen(View):
 
 @login_required
 def generar_qr_view(request):
-    usuario = request.user
-    usuario_id = usuario.id
-    nombre_usuario = usuario.username
+    usuario = request.user.usuario
 
-    qr = qrcode.QRCode(
+    # Generar QR de entrada
+    qr_entrada = qrcode.QRCode(
         version=1,
         error_correction=qrcode.constants.ERROR_CORRECT_L,
         box_size=10,
@@ -113,22 +142,74 @@ def generar_qr_view(request):
     )
 
     domain = settings.RENDER_EXTERNAL_HOSTNAME or 'http://127.0.0.1:8000'
-    qr_url = f'{domain}/registrar_asistencia/{usuario_id}'
-    
-    qr.add_data(qr_url)
-    qr.make(fit=True)
+    qr_entrada_url = f'{domain}/registrar_asistencia/{usuario.id}/entrada'
+    qr_entrada.add_data(qr_entrada_url)
+    qr_entrada.make(fit=True)
+    img_entrada = qr_entrada.make_image(fill='black', back_color='white')
 
-    img = qr.make_image(fill='black', back_color='white')
+    buffer_entrada = BytesIO()
+    img_entrada.save(buffer_entrada, 'PNG')
+    buffer_entrada.seek(0)
+    file_name_entrada = f'qr_codes/entrada_{usuario.id}.png'
+    file_path_entrada = default_storage.save(file_name_entrada, ContentFile(buffer_entrada.read()))
+    qr_code_entrada_url = default_storage.url(file_path_entrada)
 
-    buffer = BytesIO()
-    img.save(buffer, 'PNG')
-    buffer.seek(0)
+    # Generar QR de salida (solo si han pasado 4 horas)
+    qr_salida_url = ''
+    if usuario.asistencia_set.filter(fecha_salida__isnull=True).exists():
+        asistencia = usuario.asistencia_set.filter(fecha_salida__isnull=True).first()
+        tiempo_transcurrido = timezone.now() - asistencia.fecha_entrada
+        if tiempo_transcurrido >= timedelta(hours=4):
+            qr_salida = qrcode.QRCode(
+                version=1,
+                error_correction=qrcode.constants.ERROR_CORRECT_L,
+                box_size=10,
+                border=4,
+            )
+            qr_salida_url = f'{domain}/registrar_asistencia/{usuario.id}/salida'
+            qr_salida.add_data(qr_salida_url)
+            qr_salida.make(fit=True)
+            img_salida = qr_salida.make_image(fill='black', back_color='white')
 
-    file_name = f'qr_codes/{nombre_usuario}_{usuario_id}.png'
-    file_path = default_storage.save(file_name, ContentFile(buffer.read()))
-    qr_code_url = default_storage.url(file_path)
+            buffer_salida = BytesIO()
+            img_salida.save(buffer_salida, 'PNG')
+            buffer_salida.seek(0)
+            file_name_salida = f'qr_codes/salida_{usuario.id}.png'
+            file_path_salida = default_storage.save(file_name_salida, ContentFile(buffer_salida.read()))
+            qr_code_salida_url = default_storage.url(file_path_salida)
 
-    return render(request, 'qr.html', {'qr_code_url': qr_code_url})
+    return render(request, 'qr.html', {'qr_code_entrada_url': qr_code_entrada_url, 'qr_code_salida_url': qr_code_salida_url})
+
+@login_required
+def registrar_asistencia_view(request, usuario_id, tipo):
+    usuario = get_object_or_404(Usuario, id=usuario_id)
+    if tipo == 'entrada':
+        Asistencia.objects.create(
+            usuario=usuario,
+            fecha_entrada=timezone.now(),
+        )
+    elif tipo == 'salida':
+        asistencia = Asistencia.objects.filter(usuario=usuario, fecha_salida__isnull=True).first()
+        if asistencia:
+            asistencia.fecha_salida = timezone.now()
+            asistencia.save()
+
+            # Calcular horas trabajadas y actualizar usuario
+            horas_trabajadas = (asistencia.fecha_salida - asistencia.fecha_entrada).total_seconds() / 3600
+            usuario.horas_realizadas += horas_trabajadas
+            usuario.save()
+
+            # Verificar si faltan 20 horas para completar el servicio/residencia
+            if usuario.horas_requeridas - usuario.horas_realizadas <= 20:
+                send_mail(
+                    'Servicio/Residencia casi completo',
+                    f'Hola {usuario.nombre}, te faltan menos de 20 horas para completar tu {usuario.tipo_servicio}.',
+                    settings.DEFAULT_FROM_EMAIL,
+                    [usuario.correo_electronico],
+                    fail_silently=False,
+                )
+
+    return redirect('entrada_exitosa', asistencia_id=asistencia.id)
 
 @login_required
 def entrada_exitosa_view(request, asistencia_id):
@@ -136,98 +217,6 @@ def entrada_exitosa_view(request, asistencia_id):
     return render(request, 'entrada_exitosa.html', {'asistencia': asistencia})
 
 @login_required
-def escanear_qr_view(request):
-    if request.method == 'POST':
-        usuario_id = request.POST.get('usuario_id', '')
-
-        try:
-            # Filtrar todas las asistencias activas del usuario
-            asistencias_activas = Asistencia.objects.filter(usuario_id=usuario_id, fecha_salida__isnull=True)
-
-            # Asegúrate de que solo haya una asistencia activa (debería ser solo una)
-            if asistencias_activas.exists():
-                asistencia_actual = asistencias_activas.first()
-
-                # Actualizar la fecha de salida y guardar la asistencia
-                asistencia_actual.fecha_salida = timezone.now()
-                asistencia_actual.save()
-
-                # Calcular horas trabajadas y actualizar usuario
-                horas_trabajadas = (asistencia_actual.fecha_salida - asistencia_actual.fecha_entrada).total_seconds() / 3600
-                usuario = asistencia_actual.usuario
-                usuario.horas_realizadas += horas_trabajadas
-                usuario.save()
-
-                # Enviar correo electrónico
-                enviar_correo_asistencia(usuario)
-
-                # Obtener todas las asistencias del usuario
-                todas_asistencias = Asistencia.objects.filter(usuario_id=usuario_id)
-
-                return render(request, 'escanear_qr.html', {'asistencia_actual': asistencia_actual, 'todas_asistencias': todas_asistencias})
-            else:
-                error = 'No se encontró ninguna asistencia activa para este usuario.'
-                return render(request, 'escanear_qr.html', {'error': error})
-        
-        except Asistencia.DoesNotExist:
-            error = 'Asistencia no encontrada.'
-            return render(request, 'escanear_qr.html', {'error': error})
-
-    return render(request, 'escanear_qr.html')
-
-
-@login_required
-def registrar_asistencia_view(request, usuario_id):
-    usuario = get_object_or_404(Usuario, id=usuario_id)
-    asistencia = Asistencia.objects.create(
-        usuario=usuario,
-        fecha_entrada=timezone.now(),
-    )
-
-    # Enviar correo electrónico
-    enviar_correo_asistencia(usuario)
-
-    return redirect('entrada_exitosa', asistencia_id=asistencia.id)
-
-def enviar_correo_asistencia(usuario):
-    send_mail(
-        'Registro de Asistencia Exitoso',
-        f'Hola {usuario.username}, tu asistencia ha sido registrada exitosamente.',
-        settings.DEFAULT_FROM_EMAIL,
-        [usuario.email],
-        fail_silently=False,
-    )
-
-
-from django.shortcuts import render, get_object_or_404
-from .models import Asistencia
-
-def revisar_asistencia(request):
-    if request.method == 'POST':
-        nombre_usuario = request.POST.get('nombre_usuario')
-
-        if not nombre_usuario:
-            error = "Por favor, ingresa un nombre de usuario válido."
-            return render(request, 'escanear_qr.html', {'error': error})
-
-        try:
-            # Buscar la asistencia por nombre de usuario
-            asistencia_actual = Asistencia.objects.get(usuario__nombre=nombre_usuario)
-            todas_asistencias = Asistencia.objects.filter(usuario__nombre=nombre_usuario)
-            
-            return render(request, 'escanear_qr.html', {'asistencia_actual': asistencia_actual, 'todas_asistencias': todas_asistencias})
-
-        except Asistencia.DoesNotExist:
-            error = f"No se encontró asistencia para el usuario con nombre {nombre_usuario}."
-            return render(request, 'escanear_qr.html', {'error': error})
-
-    return render(request, 'escanear_qr.html')
-
-from django.template.loader import get_template
-from django.http import HttpResponse
-from xhtml2pdf import pisa
-from .models import Asistencia
-
 def generar_reporte_pdf_view(request):
     asistencias = Asistencia.objects.all()
     template_path = 'reporte_asistencias.html'
@@ -252,20 +241,16 @@ def generar_reporte_view(request):
     context = {'asistencias': asistencias}
     return render(request, 'reporte_asistencias.html', context)
 
-from django.shortcuts import render
-from .models import Asistencia
-from django.db.models import Count
-import json
-
+@login_required
 def dashboard_view(request):
     # Obtener datos de asistencia
     asistencias = Asistencia.objects.all()
 
     # Procesar datos para gráficos
-    fechas = [a.fecha.strftime('%Y-%m-%d') for a in asistencias]
-    conteos = Asistencia.objects.values('fecha').annotate(conteo=Count('id'))
+    fechas = [a.fecha_entrada.strftime('%Y-%m-%d') for a in asistencias]
+    conteos = Asistencia.objects.values('fecha_entrada').annotate(conteo=Count('id'))
 
-    fechas_conteo = [c['fecha'].strftime('%Y-%m-%d') for c in conteos]
+    fechas_conteo = [c['fecha_entrada'].strftime('%Y-%m-%d') for c in conteos]
     conteos_diarios = [c['conteo'] for c in conteos]
 
     context = {
@@ -274,7 +259,6 @@ def dashboard_view(request):
     }
     
     return render(request, 'dashboard.html', context)
-
 
 # from django.shortcuts import render, get_object_or_404, redirect
 # from django.urls import reverse_lazy

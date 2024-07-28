@@ -83,32 +83,34 @@
 <body>
     <div class="container">
         <center><img class="img-circle" src="{% static '/img/LOGO.jpg' %}" width="100px" height="100px" align=""></center>
-        <h2>Registra tu entrada</h2>
-        <form method="post">
-            {% csrf_token %}
-            <input type="text" name="nombre_usuario" placeholder="Nombre de Usuario">
-            <button type="submit">Revisar Asistencia</button>
-        </form>
-        
-        {% if error %}
-            <p class="error">{{ error }}</p>
-        {% endif %}
+        <h1>Escanear QR</h1>
+    <form method="post">
+        {% csrf_token %}
+        <input type="text" name="usuario_id" placeholder="ID de Usuario">
+        <button type="submit">Escanear</button>
+    </form>
 
-        {% if asistencia_actual %}
-            <h3>Última asistencia registrada:</h3>
-            <p>Fecha de entrada: {{ asistencia_actual.fecha_entrada }}</p>
-            <p>Fecha de salida: {{ asistencia_actual.fecha_salida }}</p>
-            <!-- Otros detalles de la asistencia actual -->
+    {% if error %}
+        <p>{{ error }}</p>
+    {% endif %}
 
-            <h3>Todas las asistencias registradas:</h3>
-            <ul>
-                {% for asistencia in todas_asistencias %}
-                    <li>Fecha de entrada: {{ asistencia.fecha_entrada }}</li>
-                    <li>Fecha de salida: {{ asistencia.fecha_salida }}</li>
-                    <!-- Otros detalles de cada asistencia -->
-                {% endfor %}
-            </ul>
+    {% if asistencia_actual %}
+        <h2>Asistencia Actual</h2>
+        <p>Usuario: {{ asistencia_actual.usuario.nombre }}</p>
+        <p>Fecha de Entrada: {{ asistencia_actual.fecha_entrada }}</p>
+        {% if asistencia_actual.fecha_salida %}
+            <p>Fecha de Salida: {{ asistencia_actual.fecha_salida }}</p>
         {% endif %}
+    {% endif %}
+
+    {% if todas_asistencias %}
+        <h2>Historial de Asistencias</h2>
+        <ul>
+            {% for asistencia in todas_asistencias %}
+                <li>{{ asistencia.fecha_entrada }} - {{ asistencia.fecha_salida }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
 
         <a href="{% url 'home' %}" class="back-link">Volver al inicio</a>
     </div>

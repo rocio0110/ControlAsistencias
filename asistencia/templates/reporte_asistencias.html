@@ -194,44 +194,25 @@
     <section id="main-content">
       <section class="wrapper">
     <div class="container">
-        <h2>Reporte de Asistencias</h2>
-
-        <form class="filter-form" method="get">
-            <label for="fecha_inicio">Fecha Inicio:</label>
-            <input type="date" id="fecha_inicio" name="fecha_inicio" value="{{ request.GET.fecha_inicio }}">
-            <label for="fecha_fin">Fecha Fin:</label>
-            <input type="date" id="fecha_fin" name="fecha_fin" value="{{ request.GET.fecha_fin }}">
-            <button type="submit">Filtrar</button>
-        </form>
-
-        <table>
-            <thead>
+        <h1>Reporte de Asistencias</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Usuario</th>
+                <th>Fecha de Entrada</th>
+                <th>Fecha de Salida</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for asistencia in asistencias %}
                 <tr>
-                    <th>ID</th>
-                    <th>Nombre Usuario</th>
-                    <th>Fecha de Entrada</th>
-                    <th>Fecha de Salida</th>
-                    <th>Horas Trabajadas</th>
+                    <td>{{ asistencia.usuario.nombre }}</td>
+                    <td>{{ asistencia.fecha_entrada }}</td>
+                    <td>{{ asistencia.fecha_salida }}</td>
                 </tr>
-            </thead>
-            <tbody>
-                {% for asistencia in asistencias %}
-                    <tr>
-                        <td>{{ asistencia.id }}</td>
-                        <td>{{ asistencia.usuario.nombre }}</td>
-                        <td>{{ asistencia.fecha_entrada }}</td>
-                        <td>{{ asistencia.fecha_salida }}</td>
-                        <td>
-                            {% if asistencia.horas_trabajadas %}
-                                {{ asistencia.horas_trabajadas|floatformat:2 }}
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+            {% endfor %}
+        </tbody>
+    </table>
         <a href="{% url 'reporte_pdf' %}" class="btn">Descargar Reporte PDF</a>
 
 
