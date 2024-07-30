@@ -1,12 +1,12 @@
 from django.shortcuts import render, redirect, get_object_or_404, HttpResponse
 from django.urls import reverse
 from django.views.generic import View
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.utils import timezone
 from django.contrib.auth.forms import AuthenticationForm
-from django.contrib.auth import login
+from django.contrib.auth import login as auth_login
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.core.mail import send_mail
@@ -16,6 +16,9 @@ import qrcode
 from io import BytesIO
 from datetime import datetime, timedelta
 from .models import Usuario, Asistencia
+
+
+
 
 @login_required
 def escanear_qr_view(request):
@@ -43,16 +46,45 @@ def login_view(request):
         form = AuthenticationForm(request, request.POST)
         if form.is_valid():
             user = form.get_user()
-            login(request, user)
-            return redirect('generar_qr')  # Redirige a donde quieras después del login exitoso
+            auth_login(request, user)  # Usa auth_login en lugar de login
+            if user.is_superuser:
+                return redirect('admin_dashboard')  # Asegúrate de que el nombre de la URL coincida
+            else:
+                return redirect('generar_qr')  # Redirige a donde quieras para usuarios normales
     else:
         form = AuthenticationForm()
     
     return render(request, 'login.html', {'form': form})
 
+class AdminDashboardView(LoginRequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        if not request.user.is_superuser:
+            return redirect('login')  # Redirige a la página de login si el usuario no es superusuario
+        return render(request, 'admin_dashboard.html')   
+    
 @login_required
 def home_view(request):
     return render(request, 'home.html')
+
+
+def admin_login_view(request):
+    if request.method == 'POST':
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
+            if user.is_superuser:  # Verificar si el usuario es un superusuario
+                login(request, user)
+                return redirect('admin_dashboard')
+            else:
+                form.add_error(None, "Acceso denegado. Solo los administradores pueden acceder.")
+    else:
+        form = AuthenticationForm()
+    return render(request, 'admin_dashboard.html', {'form': form})
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)  # Verificar si el usuario es un superusuario
+def admin_dashboard_view(request):
+    return render(request, 'admin_dashboard.html')
 
 def agregar_usuario(request):
     if request.method == 'POST':
@@ -105,9 +137,9 @@ def eliminar_usuario(request, pk):
         return redirect('lista_usuarios')
     return render(request, 'eliminar_usuario.html', {'usuario': usuario})
 
-class Index(LoginRequiredMixin, View):
-    def get(self, request):
-        return render(request, 'index.html')
+# class Index(LoginRequiredMixin, View):
+#     def get(self, request):
+#         return render(request, 'index.html')
 
 class BasicTable(LoginRequiredMixin, View):
     def get(self, request):
@@ -133,6 +165,10 @@ class LockScreen(View):
 def generar_qr_view(request):
     usuario = request.user.usuario
 
+    # Inicializar las URLs de los QR
+    qr_code_entrada_url = ''
+    qr_code_salida_url = ''
+
     # Generar QR de entrada
     qr_entrada = qrcode.QRCode(
         version=1,
@@ -155,7 +191,6 @@ def generar_qr_view(request):
     qr_code_entrada_url = default_storage.url(file_path_entrada)
 
     # Generar QR de salida (solo si han pasado 4 horas)
-    qr_salida_url = ''
     if usuario.asistencia_set.filter(fecha_salida__isnull=True).exists():
         asistencia = usuario.asistencia_set.filter(fecha_salida__isnull=True).first()
         tiempo_transcurrido = timezone.now() - asistencia.fecha_entrada
@@ -180,6 +215,7 @@ def generar_qr_view(request):
 
     return render(request, 'qr.html', {'qr_code_entrada_url': qr_code_entrada_url, 'qr_code_salida_url': qr_code_salida_url})
 
+    
 @login_required
 def registrar_asistencia_view(request, usuario_id, tipo):
     usuario = get_object_or_404(Usuario, id=usuario_id)
