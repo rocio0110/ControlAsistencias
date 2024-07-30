@@ -166,8 +166,6 @@ AUTHENTICATION_BACKENDS = [
     'asistencia.auth_backends.UsuariosBackend',
     'django.contrib.auth.backends.ModelBackend',
 ]
-# settings.py
-# settings.py
 
 # URL to redirect to after a successful login
 LOGIN_REDIRECT_URL = '/'
