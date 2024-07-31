@@ -91,7 +91,7 @@ def agregar_usuario(request):
         form = UsuarioForm(request.POST)
         if form.is_valid():
             usuario = form.save()
-
+            
             # Enviar correo con usuario y contraseña
             send_mail(
                 'Usuario creado',
@@ -107,13 +107,41 @@ def agregar_usuario(request):
         form = UsuarioForm()
     return render(request, 'agregar_usuario.html', {'form': form})
 
-# @login_required
+
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+from django.db.models import Sum
+from datetime import timedelta
+
+@login_required
 def lista_usuarios(request):
-    usuario = Usuario.objects.all()
+    usuarios = Usuario.objects.all()
     query = request.GET.get('q')
     if query:
-        usuario = usuario.filter(nombre__icontains=query)
-    return render(request, 'lista_usuarios.html', {'usuario': usuario, 'query': query})
+        usuarios = usuarios.filter(nombre__icontains=query)
+
+    for usuario in usuarios:
+        try:
+            # Inicializar horas realizadas
+            horas_realizadas = 0
+            asistencias = Asistencia.objects.filter(usuario=usuario, fecha_salida__isnull=False)
+            for asistencia in asistencias:
+                if asistencia.fecha_salida and asistencia.fecha_entrada:
+                    delta = asistencia.fecha_salida - asistencia.fecha_entrada
+                    horas_realizadas += delta.total_seconds() / 3600
+
+            usuario.horas_realizadas = horas_realizadas
+            usuario.horas_faltantes = usuario.horas_requeridas - horas_realizadas
+
+        except Exception as e:
+            print(f"Error al calcular horas para {usuario}: {e}")
+            usuario.horas_realizadas = 0
+            usuario.horas_faltantes = usuario.horas_requeridas
+
+    return render(request, 'lista_usuarios.html', {'usuarios': usuarios, 'query': query})
 
 @login_required
 def editar_usuario(request, pk):
@@ -130,12 +158,13 @@ def editar_usuario(request, pk):
 
 @login_required
 def eliminar_usuario(request, pk):
-    usuario = get_object_or_404(Usuarios, pk=pk)
+    usuario = get_object_or_404(Usuario, pk=pk)
     if request.method == 'POST':
         usuario.delete()
         messages.success(request, 'Usuario eliminado correctamente.')
         return redirect('lista_usuarios')
     return render(request, 'eliminar_usuario.html', {'usuario': usuario})
+
 
 # class Index(LoginRequiredMixin, View):
 #     def get(self, request):

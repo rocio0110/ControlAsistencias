@@ -150,6 +150,7 @@
               <input type="text" name="q" class="form-control" placeholder="Buscar por nombre" value="{{ query }}">
             </div>
             <button type="submit" class="btn btn-primary">Buscar</button>
+            <a href="{% url 'agregar_usuario' %}" class="btn btn-success"><i class="fa fa-plus"></i> Agregar Usuario</a>
           </form>
           <div class="table-responsive">
             <table class="table table-striped">
@@ -175,8 +176,8 @@
                   <td>{{ usuario.nombre }}</td>
                   <td>{{ usuario.apellido_paterno }}</td>
                   <td>{{ usuario.apellido_materno }}</td>
-                  <td>{{ usuario.correo_electronico }}</td>
                   <td>{{ usuario.telefono }}</td>
+                  <td>{{ usuario.correo_electronico }}</td>
                   <td>{{ usuario.get_tipo_servicio_display }}</td>
                   <td>{{ usuario.horas_requeridas }}</td>
                   <td>{{ usuario.horas_realizadas }}</td>
@@ -191,7 +192,7 @@
             </table>
           </div>
         </div>
-        <a href="{% url 'agregar_usuario' %}" class="btn btn-success"><i class="fa fa-plus"></i> Agregar Usuario</a>
+        
       </section>
     </section>
     <!--main content end-->

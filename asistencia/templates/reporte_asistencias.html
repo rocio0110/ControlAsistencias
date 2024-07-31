@@ -120,7 +120,7 @@
         <div class="fa fa-bars tooltips" data-placement="right" data-original-title="Toggle Navigation"></div>
       </div>
       <!--logo start-->
-      <a href="{% url 'index' %}" class="logo"><b>Control de Asistencias</b></a>
+      <a href="{% url 'admin_dashboard' %}" class="logo"><b>Control de Asistencias</b></a>
       <!--logo end-->
       <div class="nav notify-row" id="top_menu">
       </div>
@@ -143,9 +143,14 @@
               <h5 class="centered">Administrador</h5>
                 
               <li class="mt">
-                  <a class="active" href="index.html">
+                  <a class="active""{% url 'admin_dashboard' %}">
                       <i class="fa fa-dashboard"></i>
                       <span>Dashboard</span>
+                      <ul class="sub">
+                      <li><a  href="{% url 'admin_dashboard' %}">Agregar Usuarios</a></li>
+                     
+
+                  </ul>
                   </a>
               </li>
 
@@ -216,7 +221,7 @@
         <a href="{% url 'reporte_pdf' %}" class="btn">Descargar Reporte PDF</a>
 
 
-        <a href="{% url 'index' %}" class="btn">Volver al inicio</a>
+        <a href="{% url 'admin_dashboard' %}" class="btn">Volver al inicio</a>
 
     </div>
 

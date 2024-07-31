@@ -14,7 +14,7 @@ class Usuario(models.Model):
     apellido_materno = models.CharField(max_length=100)
     telefono = models.CharField(max_length=20)
     correo_electronico = models.EmailField(max_length=255)
-    fecha_registro = models.DateField(auto_now_add=True)  # Eliminar duplicado
+    # fecha_registro = models.DateField(auto_now_add=True)
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
 
@@ -48,8 +48,8 @@ class Usuario(models.Model):
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
         # Generar usuario y contraseña basados en nombre y apellidos
-        username = instance.nombre.lower()
-        password = instance.apellido_paterno[:2].lower() + instance.apellido_materno[:2].lower()
+        username = instance.nombre.lower()[:30]  # Limitar longitud del username para evitar problemas
+        password = (instance.apellido_paterno[:2] + instance.apellido_materno[:2]).lower()
 
         # Crear usuario en el sistema de autenticación de Django
         user = User.objects.create_user(username=username, password=password)
@@ -65,10 +65,21 @@ def create_user_profile(sender, instance, created, **kwargs):
             fail_silently=False,
         )
 
+from django.core.exceptions import ValidationError
+
 class Asistencia(models.Model):
     usuario = models.ForeignKey(Usuario, on_delete=models.PROTECT)
     fecha_entrada = models.DateTimeField(auto_now_add=True)
     fecha_salida = models.DateTimeField(null=True, blank=True)
+
+    def clean(self):
+        # Validar que las fechas sean correctas
+        if self.fecha_salida and self.fecha_entrada and self.fecha_salida < self.fecha_entrada:
+            raise ValidationError('La fecha de salida no puede ser anterior a la fecha de entrada.')
+
+    def save(self, *args, **kwargs):
+        self.clean()  # Llama a la validación antes de guardar
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.usuario.user.username} - {self.fecha_entrada}"
