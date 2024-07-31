@@ -1,0 +1,5 @@
+-- database: c:\Users\Rocio\OneDrive\Documentos\ASISTENCIAS\control_asistencias\db.sqlite3
+
+-- Use the ▷ button in the top right corner to run the entire file.
+
+SELECT * FROM asistencia_usuario;
