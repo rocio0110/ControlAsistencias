@@ -16,7 +16,16 @@ import qrcode
 from io import BytesIO
 from datetime import datetime, timedelta
 from .models import Usuario, Asistencia
+from django.contrib.auth.models import User
+import random
+import string
 
+def generate_unique_username(base_username):
+    # Asegúrate de que el nombre de usuario sea único
+    unique_username = base_username
+    while User.objects.filter(username=unique_username).exists():
+        unique_username = f"{base_username}_{random.randint(1000, 9999)}"
+    return unique_username
 
 
 
@@ -28,12 +37,15 @@ def escanear_qr_view(request):
 
     if request.method == 'POST':
         usuario_id = request.POST.get('usuario_id')
-        try:
-            usuario = get_object_or_404(Usuario, id=usuario_id)
-            asistencia_actual = Asistencia.objects.filter(usuario=usuario, fecha_salida__isnull=True).first()
-            todas_asistencias = Asistencia.objects.filter(usuario=usuario).order_by('-fecha_entrada')
-        except Usuario.DoesNotExist:
-            error = "Usuario no encontrado"
+        if usuario_id is not None and usuario_id.isdigit():
+            try:
+                usuario = get_object_or_404(Usuario, id=usuario_id)
+                asistencia_actual = Asistencia.objects.filter(usuario=usuario, fecha_salida__isnull=True).first()
+                todas_asistencias = Asistencia.objects.filter(usuario=usuario).order_by('-fecha_entrada')
+            except Usuario.DoesNotExist:
+                error = "Usuario no encontrado"
+        else:
+            error = "ID de usuario inválido"
 
     return render(request, 'escanear_qr.html', {
         'error': error,
@@ -86,25 +98,55 @@ def admin_login_view(request):
 def admin_dashboard_view(request):
     return render(request, 'admin_dashboard.html')
 
+from django.db import IntegrityError
+
+@login_required
 def agregar_usuario(request):
     if request.method == 'POST':
         form = UsuarioForm(request.POST)
         if form.is_valid():
-            usuario = form.save()
+            # Extract form data
+            nombre = form.cleaned_data['nombre']
+            apellido_paterno = form.cleaned_data['apellido_paterno']
+            apellido_materno = form.cleaned_data['apellido_materno']
+            telefono = form.cleaned_data['telefono']
+            correo_electronico = form.cleaned_data['correo_electronico']
+            tipo_servicio = form.cleaned_data['tipo_servicio']
+
+            # Generate username and password
+            username = nombre
+            password = (apellido_paterno[:2] + apellido_materno[:2]).lower()
+
+            # Check if username already exists
+            if User.objects.filter(username=username).exists():
+                messages.error(request, 'El nombre de usuario ya está en uso.')
+                return render(request, 'agregar_usuario.html', {'form': form})
+
+            # Create the user
+            user = User.objects.create_user(username=username, password=password, email=correo_electronico)
             
-            # Enviar correo con usuario y contraseña
-            send_mail(
-                'Usuario creado',
-                f'Tu usuario es {usuario.user.username} y tu contraseña es {usuario.user.password}',
-                settings.DEFAULT_FROM_EMAIL,
-                [usuario.correo_electronico],
-                fail_silently=False,
+            # Create the Usuario profile instance
+            Usuario.objects.create(
+                user=user,
+                nombre=nombre,
+                apellido_paterno=apellido_paterno,
+                apellido_materno=apellido_materno,
+                telefono=telefono,
+                correo_electronico=correo_electronico,
+                tipo_servicio=tipo_servicio
             )
 
-            messages.success(request, 'Usuario agregado correctamente.')
+            # Send credentials to the user via email
+            subject = 'Tu cuenta ha sido creada'
+            message = f'Hola {nombre},\n\nTu cuenta ha sido creada con éxito.\n\nNombre de usuario: {username}\nContraseña: {password}\n\nPor favor, cámbiala al iniciar sesión.\n\nSaludos,\nEl equipo de Control de Asistencias'
+            from_email = settings.DEFAULT_FROM_EMAIL
+            send_mail(subject, message, from_email, [correo_electronico])
+
+            messages.success(request, 'Usuario agregado exitosamente.')
             return redirect('lista_usuarios')
     else:
         form = UsuarioForm()
+
     return render(request, 'agregar_usuario.html', {'form': form})
 
 
@@ -192,11 +234,15 @@ class LockScreen(View):
 
 @login_required
 def generar_qr_view(request):
-    usuario = request.user.usuario
+    try:
+        usuario = request.user.usuario
+    except Usuario.DoesNotExist:
+        messages.error(request, "Tu perfil de usuario no está configurado correctamente.")
+        return redirect('home')  # Redirige a una página segura o de inicio
 
-    # Inicializar las URLs de los QR
-    qr_code_entrada_url = ''
-    qr_code_salida_url = ''
+    # Inicializar URLs de QR
+    qr_code_entrada_url = None
+    qr_code_salida_url = None
 
     # Generar QR de entrada
     qr_entrada = qrcode.QRCode(
@@ -244,18 +290,25 @@ def generar_qr_view(request):
 
     return render(request, 'qr.html', {'qr_code_entrada_url': qr_code_entrada_url, 'qr_code_salida_url': qr_code_salida_url})
 
-    
+
 @login_required
 def registrar_asistencia_view(request, usuario_id, tipo):
     usuario = get_object_or_404(Usuario, id=usuario_id)
     if tipo == 'entrada':
-        Asistencia.objects.create(
+        if Asistencia.objects.filter(usuario=usuario, fecha_entrada__date=timezone.now().date()).exists():
+            messages.error(request, 'Ya se ha generado un QR de entrada para hoy.')
+            return redirect('generar_qr')  # Redirige al formulario de generación de QR
+        asistencia = Asistencia.objects.create(
             usuario=usuario,
             fecha_entrada=timezone.now(),
         )
+        return redirect('entrada_exitosa', asistencia_id=asistencia.id)
     elif tipo == 'salida':
         asistencia = Asistencia.objects.filter(usuario=usuario, fecha_salida__isnull=True).first()
         if asistencia:
+            if Asistencia.objects.filter(usuario=usuario, fecha_salida__date=timezone.now().date()).exists():
+                messages.error(request, 'Ya se ha generado un QR de salida para hoy.')
+                return redirect('generar_qr')  # Redirige al formulario de generación de QR
             asistencia.fecha_salida = timezone.now()
             asistencia.save()
 
@@ -273,13 +326,14 @@ def registrar_asistencia_view(request, usuario_id, tipo):
                     [usuario.correo_electronico],
                     fail_silently=False,
                 )
+        return redirect('entrada_exitosa', asistencia_id=asistencia.id)
 
-    return redirect('entrada_exitosa', asistencia_id=asistencia.id)
 
 @login_required
 def entrada_exitosa_view(request, asistencia_id):
     asistencia = get_object_or_404(Asistencia, id=asistencia_id)
     return render(request, 'entrada_exitosa.html', {'asistencia': asistencia})
+
 
 @login_required
 def generar_reporte_pdf_view(request):

@@ -6,6 +6,8 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from datetime import timedelta
 from django.core.mail import send_mail
+from django.core.exceptions import ValidationError
+
 
 class Usuario(models.Model):
     # Campos de información personal
@@ -65,20 +67,23 @@ def create_user_profile(sender, instance, created, **kwargs):
             fail_silently=False,
         )
 
-from django.core.exceptions import ValidationError
 
 class Asistencia(models.Model):
     usuario = models.ForeignKey(Usuario, on_delete=models.PROTECT)
-    fecha_entrada = models.DateTimeField(auto_now_add=True)
+    fecha_entrada = models.DateTimeField(null=True, blank=True)
     fecha_salida = models.DateTimeField(null=True, blank=True)
+    fecha_scan = models.DateTimeField(default=timezone.now)  # Fecha del escaneo del QR
 
     def clean(self):
-        # Validar que las fechas sean correctas
         if self.fecha_salida and self.fecha_entrada and self.fecha_salida < self.fecha_entrada:
             raise ValidationError('La fecha de salida no puede ser anterior a la fecha de entrada.')
+        if self.fecha_entrada and Asistencia.objects.filter(usuario=self.usuario, fecha_entrada__date=self.fecha_entrada.date()).exclude(id=self.id).exists():
+            raise ValidationError('Ya se ha registrado una entrada para este usuario en el día de hoy.')
+        if self.fecha_salida and Asistencia.objects.filter(usuario=self.usuario, fecha_salida__date=self.fecha_salida.date()).exclude(id=self.id).exists():
+            raise ValidationError('Ya se ha registrado una salida para este usuario en el día de hoy.')
 
     def save(self, *args, **kwargs):
-        self.clean()  # Llama a la validación antes de guardar
+        self.clean()
         super().save(*args, **kwargs)
 
     def __str__(self):

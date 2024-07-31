@@ -1,26 +1,18 @@
-
 from django import forms
-from django.core.mail import send_mail
-from django.conf import settings
 from .models import Usuario
 import random
 import string
 
-# Función para generar contraseñas seguras
 def generate_password(length=8):
     characters = string.ascii_letters + string.digits + string.punctuation
     password = ''.join(random.choice(characters) for i in range(length))
     return password
 
-# Formulario para agregar usuarios
-
 class UsuarioForm(forms.ModelForm):
     class Meta:
         model = Usuario
-        fields = ['nombre', 'apellido_paterno', 'apellido_materno', 'telefono', 'correo_electronico','tipo_servicio']
+        fields = ['nombre', 'apellido_paterno', 'apellido_materno', 'telefono', 'correo_electronico', 'tipo_servicio']
 
-
-    # Validación para asegurar que el correo electrónico es único
     def clean_correo_electronico(self):
         correo_electronico = self.cleaned_data.get('correo_electronico')
         if Usuario.objects.filter(correo_electronico=correo_electronico).exists():

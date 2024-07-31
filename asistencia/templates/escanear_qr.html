@@ -16,25 +16,29 @@
             align-items: center;
             height: 100vh;
         }
-    
+
         .container {
             text-align: center;
-            background-color:  #ffffff; /* Gris */
+            background-color:  #ffffff; /* Blanco */
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             max-width: 400px;
             width: 100%;
         }
-    
+
+        h1 {
+            color: #B08A5B; /* Café */
+        }
+
         h2 {
             color: #B08A5B; /* Café */
         }
-    
+
         form {
             margin-top: 20px;
         }
-    
+
         input[type="text"] {
             width: 100%;
             padding: 10px;
@@ -42,7 +46,7 @@
             border-radius: 5px;
             border: 1px solid #ccc;
         }
-    
+
         button {
             background-color: #602935; /* Granate */
             color: #ffffff; /* Blanco */
@@ -53,16 +57,16 @@
             transition: background-color 0.3s ease;
             margin-top: 20px;
         }
-    
+
         button:hover {
             background-color: #4b1e29; /* Tonos más oscuros */
         }
-    
+
         .error {
             color: red;
             margin-top: 10px;
         }
-    
+
         .back-link {
             display: inline-block;
             margin-top: 20px;
@@ -74,7 +78,7 @@
             text-decoration: none;
             transition: background-color 0.3s ease;
         }
-    
+
         .back-link:hover {
             background-color: #4b1e29; /* Tonos más oscuros */
         }
@@ -82,39 +86,46 @@
 </head>
 <body>
     <div class="container">
-        <center><img class="img-circle" src="{% static '/img/LOGO.jpg' %}" width="100px" height="100px" align=""></center>
+        <center><img class="img-circle" src="{% static 'img/LOGO.JPG' %}" width="100px" height="100px" alt="Logo"></center>
         <h1>Escanear QR</h1>
-    <form method="post">
-        {% csrf_token %}
-        <input type="text" name="usuario_id" placeholder="ID de Usuario">
-        <button type="submit">Escanear</button>
-    </form>
+        <form method="post">
+            {% csrf_token %}
+            <input type="text" name="usuario_id" placeholder="ID de Usuario">
+            <button type="submit">Escanear</button>
+        </form>
 
-    {% if error %}
-        <p>{{ error }}</p>
-    {% endif %}
-
-    {% if asistencia_actual %}
-        <h2>Asistencia Actual</h2>
-        <p>Usuario: {{ asistencia_actual.usuario.nombre }}</p>
-        <p>Fecha de Entrada: {{ asistencia_actual.fecha_entrada }}</p>
-        {% if asistencia_actual.fecha_salida %}
-            <p>Fecha de Salida: {{ asistencia_actual.fecha_salida }}</p>
+        {% if error %}
+            <p class="error">{{ error }}</p>
         {% endif %}
-    {% endif %}
 
-    {% if todas_asistencias %}
-        <h2>Historial de Asistencias</h2>
-        <ul>
-            {% for asistencia in todas_asistencias %}
-                <li>{{ asistencia.fecha_entrada }} - {{ asistencia.fecha_salida }}</li>
-            {% endfor %}
-        </ul>
-    {% endif %}
+        {% if asistencia_actual %}
+            <h2>Asistencia Actual</h2>
+            <p>Usuario: {{ asistencia_actual.usuario.nombre }}</p>
+            <p>Fecha de Entrada: {{ asistencia_actual.fecha_entrada }}</p>
+            {% if asistencia_actual.fecha_salida %}
+                <p>Fecha de Salida: {{ asistencia_actual.fecha_salida }}</p>
+            {% else %}
+                <p>Aún no ha salido.</p>
+            {% endif %}
+        {% endif %}
+
+        {% if todas_asistencias %}
+            <h2>Historial de Asistencias</h2>
+            <ul>
+                {% for asistencia in todas_asistencias %}
+                    <li>
+                        Fecha de Entrada: {{ asistencia.fecha_entrada }} 
+                        {% if asistencia.fecha_salida %}
+                            - Fecha de Salida: {{ asistencia.fecha_salida }}
+                        {% else %}
+                            - Aún no ha salido
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
 
         <a href="{% url 'home' %}" class="back-link">Volver al inicio</a>
     </div>
-
-    <!-- Scripts anteriores... -->
 </body>
 </html>
