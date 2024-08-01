@@ -72,6 +72,7 @@ MIDDLEWARE = [
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
 # Utiliza WhiteNoise para servir archivos estáticos en producción
 STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 
