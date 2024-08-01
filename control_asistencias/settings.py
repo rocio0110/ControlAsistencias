@@ -72,6 +72,7 @@ MIDDLEWARE = [
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [BASE_DIR / 'asistencia/static']
 
 # Utiliza WhiteNoise para servir archivos estáticos en producción
 STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
@@ -168,7 +169,7 @@ DEFAULT_FROM_EMAIL = 'chio7933@gmail.com'
 
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_ROOT = BASE_DIR / 'media'
 
 
 
