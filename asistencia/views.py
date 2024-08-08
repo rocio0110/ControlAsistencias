@@ -261,9 +261,17 @@ def generar_qr_view(request):
     buffer_entrada = BytesIO()
     img_entrada.save(buffer_entrada, 'PNG')
     buffer_entrada.seek(0)
-    file_name_entrada = f'qr_codes/entrada_{usuario.id}.png'
-    file_path_entrada = default_storage.save(file_name_entrada, ContentFile(buffer_entrada.read()))
-    qr_code_entrada_url = default_storage.url(file_path_entrada)
+    
+    # Define the path to the static img directory
+    static_img_path = os.path.join(settings.BASE_DIR, 'static', 'img')
+    os.makedirs(static_img_path, exist_ok=True)
+
+    file_name_entrada = f'entrada_{usuario.id}.png'
+    file_path_entrada = os.path.join(static_img_path, file_name_entrada)
+    with open(file_path_entrada, 'wb') as f:
+        f.write(buffer_entrada.getvalue())
+    
+    qr_code_entrada_url = os.path.join(settings.STATIC_URL, 'img', file_name_entrada)
 
     # Generar QR de salida (solo si han pasado 4 horas)
     if usuario.asistencia_set.filter(fecha_salida__isnull=True).exists():
@@ -284,13 +292,18 @@ def generar_qr_view(request):
             buffer_salida = BytesIO()
             img_salida.save(buffer_salida, 'PNG')
             buffer_salida.seek(0)
-            file_name_salida = f'qr_codes/salida_{usuario.id}.png'
-            file_path_salida = default_storage.save(file_name_salida, ContentFile(buffer_salida.read()))
-            qr_code_salida_url = default_storage.url(file_path_salida)
+
+            file_name_salida = f'salida_{usuario.id}.png'
+            file_path_salida = os.path.join(static_img_path, file_name_salida)
+            with open(file_path_salida, 'wb') as f:
+                f.write(buffer_salida.getvalue())
+            
+            qr_code_salida_url = os.path.join(settings.STATIC_URL, 'img', file_name_salida)
 
     return render(request, 'qr.html', {'qr_code_entrada_url': qr_code_entrada_url, 'qr_code_salida_url': qr_code_salida_url})
 
 
+    
 @login_required
 def registrar_asistencia_view(request, usuario_id, tipo):
     usuario = get_object_or_404(Usuario, id=usuario_id)

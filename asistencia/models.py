@@ -68,15 +68,16 @@ def create_user_profile(sender, instance, created, **kwargs):
         )
 
 
-from django.db import models
 from django.utils import timezone
 from django.core.exceptions import ValidationError
+from django.db import models
+from datetime import timedelta
 
 class Asistencia(models.Model):
-    usuario = models.ForeignKey('Usuario', on_delete=models.PROTECT)
+    usuario = models.ForeignKey(Usuario, on_delete=models.PROTECT)
     fecha_entrada = models.DateTimeField(null=True, blank=True)
     fecha_salida = models.DateTimeField(null=True, blank=True)
-    fecha_scan = models.DateTimeField(default=timezone.now)  # Fecha del escaneo del QR
+    fecha_scan = models.DateTimeField(default=timezone.now)  # Asegúrate de importar timezone correctamente
 
     def clean(self):
         if self.fecha_salida and self.fecha_entrada and self.fecha_salida < self.fecha_entrada:
