@@ -234,17 +234,15 @@ class LockScreen(View):
     def get(self, request):
         return render(request, 'lock_screen.html')
 
-import qrcode
-from io import BytesIO
-from datetime import timedelta
-from django.utils import timezone
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
+from django.conf import settings
 from django.shortcuts import render, redirect
 from django.contrib import messages
-from django.conf import settings
-from django.contrib.auth.decorators import login_required
-from .models import Usuario
+from django.utils import timezone
+from datetime import timedelta
+import qrcode
+from io import BytesIO
 
 @login_required
 def generar_qr_view(request):
@@ -258,19 +256,15 @@ def generar_qr_view(request):
     qr_code_entrada_url = None
     qr_code_salida_url = None
 
-    # Verificar si ya se generó un QR de entrada hoy
-    entrada_generada = default_storage.exists(f'static/img/qr_codes/entrada_{usuario.id}_{timezone.now().date()}.png')
-    
-    if entrada_generada:
-        messages.info(request, "Ya has generado un QR de entrada para hoy.")
-    else:
-        # Generar QR de entrada
+    # Generar QR de entrada
+    if not usuario.asistencia_set.filter(fecha_salida__isnull=True).exists():
         qr_entrada = qrcode.QRCode(
             version=1,
             error_correction=qrcode.constants.ERROR_CORRECT_L,
             box_size=10,
             border=4,
         )
+
         domain = settings.RENDER_EXTERNAL_HOSTNAME or 'http://127.0.0.1:8000'
         qr_entrada_url = f'{domain}/registrar_asistencia/{usuario.id}/entrada'
         qr_entrada.add_data(qr_entrada_url)
@@ -280,20 +274,15 @@ def generar_qr_view(request):
         buffer_entrada = BytesIO()
         img_entrada.save(buffer_entrada, 'PNG')
         buffer_entrada.seek(0)
-        file_name_entrada = f'static/img/qr_codes/entrada_{usuario.id}_{timezone.now().date()}.png'
+        file_name_entrada = f'img/qr_codes/entrada_{usuario.id}_{timezone.now().strftime("%Y-%m-%d")}.png'
         file_path_entrada = default_storage.save(file_name_entrada, ContentFile(buffer_entrada.read()))
         qr_code_entrada_url = default_storage.url(file_path_entrada)
 
-    # Verificar si ya se generó un QR de salida después de 4 horas
-    salida_generada = default_storage.exists(f'static/img/qr_codes/salida_{usuario.id}_{timezone.now().date()}.png')
-
-    if salida_generada:
-        messages.info(request, "Ya has generado un QR de salida para hoy.")
-    elif usuario.asistencia_set.filter(fecha_salida__isnull=True, fecha_entrada__date=timezone.now().date()).exists():
-        asistencia = usuario.asistencia_set.filter(fecha_salida__isnull=True, fecha_entrada__date=timezone.now().date()).first()
+    # Generar QR de salida (solo si han pasado 4 horas)
+    if usuario.asistencia_set.filter(fecha_salida__isnull=True).exists():
+        asistencia = usuario.asistencia_set.filter(fecha_salida__isnull=True).first()
         tiempo_transcurrido = timezone.now() - asistencia.fecha_entrada
         if tiempo_transcurrido >= timedelta(hours=4):
-            # Generar QR de salida
             qr_salida = qrcode.QRCode(
                 version=1,
                 error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -308,7 +297,7 @@ def generar_qr_view(request):
             buffer_salida = BytesIO()
             img_salida.save(buffer_salida, 'PNG')
             buffer_salida.seek(0)
-            file_name_salida = f'static/img/qr_codes/salida_{usuario.id}_{timezone.now().date()}.png'
+            file_name_salida = f'img/qr_codes/salida_{usuario.id}_{timezone.now().strftime("%Y-%m-%d")}.png'
             file_path_salida = default_storage.save(file_name_salida, ContentFile(buffer_salida.read()))
             qr_code_salida_url = default_storage.url(file_path_salida)
 
