@@ -259,7 +259,7 @@ def generar_qr_view(request):
     qr_code_salida_url = None
 
     # Verificar si ya se generó un QR de entrada hoy
-    entrada_generada = default_storage.exists(f'qr_codes/entrada_{usuario.id}_{timezone.now().date()}.png')
+    entrada_generada = default_storage.exists(f'static/img/qr_codes/entrada_{usuario.id}_{timezone.now().date()}.png')
     
     if entrada_generada:
         messages.info(request, "Ya has generado un QR de entrada para hoy.")
@@ -280,12 +280,12 @@ def generar_qr_view(request):
         buffer_entrada = BytesIO()
         img_entrada.save(buffer_entrada, 'PNG')
         buffer_entrada.seek(0)
-        file_name_entrada = f'qr_codes/entrada_{usuario.id}_{timezone.now().date()}.png'
+        file_name_entrada = f'static/img/qr_codes/entrada_{usuario.id}_{timezone.now().date()}.png'
         file_path_entrada = default_storage.save(file_name_entrada, ContentFile(buffer_entrada.read()))
         qr_code_entrada_url = default_storage.url(file_path_entrada)
 
     # Verificar si ya se generó un QR de salida después de 4 horas
-    salida_generada = default_storage.exists(f'qr_codes/salida_{usuario.id}_{timezone.now().date()}.png')
+    salida_generada = default_storage.exists(f'static/img/qr_codes/salida_{usuario.id}_{timezone.now().date()}.png')
 
     if salida_generada:
         messages.info(request, "Ya has generado un QR de salida para hoy.")
@@ -308,7 +308,7 @@ def generar_qr_view(request):
             buffer_salida = BytesIO()
             img_salida.save(buffer_salida, 'PNG')
             buffer_salida.seek(0)
-            file_name_salida = f'qr_codes/salida_{usuario.id}_{timezone.now().date()}.png'
+            file_name_salida = f'static/img/qr_codes/salida_{usuario.id}_{timezone.now().date()}.png'
             file_path_salida = default_storage.save(file_name_salida, ContentFile(buffer_salida.read()))
             qr_code_salida_url = default_storage.url(file_path_salida)
 

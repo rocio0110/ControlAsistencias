@@ -2,6 +2,8 @@
 from django.urls import path
 from .views import *
 from asistencia import views
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('login/', views.login_view, name='login'),
@@ -23,7 +25,9 @@ urlpatterns = [
     path('calendar/', Calendar.as_view(), name='calendar'), 
     path('reporte/', generar_reporte_view, name='reporte'),
     path('reporte/pdf/', generar_reporte_pdf_view, name='reporte_pdf'),   
-]
+
+
+]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
 
 
