@@ -14,16 +14,6 @@ from pathlib import Path
 import environ
 import os
 
-# settings.py
-LOGIN_URL = 'login'  # URL a la que se redirige si no está autenticado
-LOGIN_REDIRECT_URL = 'index'  # URL a la que se redirige después de un login exitoso de usuario
-LOGOUT_REDIRECT_URL = 'lock_screen'  # URL a la que se redirige después de un logout
-
-# Puedes agregar esta configuración adicional para redirección de administradores si es necesario
-ADMIN_LOGIN_REDIRECT_URL = 'index'  # URL a la que se redirige después de un login exitoso de administrador
-
-
-
  
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
