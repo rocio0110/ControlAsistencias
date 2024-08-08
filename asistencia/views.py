@@ -282,7 +282,8 @@ def generar_qr_view(request):
         buffer_entrada.seek(0)
         file_name_entrada = f'static/img/qr_codes/entrada_{usuario.id}_{timezone.now().date()}.png'
         file_path_entrada = default_storage.save(file_name_entrada, ContentFile(buffer_entrada.read()))
-        qr_code_entrada_url = default_storage.url(file_path_entrada)
+        qr_code_entrada_url = request.build_absolute_uri(settings.MEDIA_URL + file_name_entrada)
+
 
     # Verificar si ya se generó un QR de salida después de 4 horas
     salida_generada = default_storage.exists(f'static/img/qr_codes/salida_{usuario.id}_{timezone.now().date()}.png')
