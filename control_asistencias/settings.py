@@ -156,6 +156,9 @@ EMAIL_HOST_PASSWORD = 'neskijtsjonnndpt'
 DEFAULT_FROM_EMAIL = 'chio7933@gmail.com'
 
 
+ADMIN_EMAIL = 'admin@example.com'  # Reemplaza con el correo del administrador
+
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 

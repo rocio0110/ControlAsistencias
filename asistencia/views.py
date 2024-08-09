@@ -252,17 +252,16 @@ def generar_qr_view(request):
         usuario = request.user.usuario
     except Usuario.DoesNotExist:
         messages.error(request, "Tu perfil de usuario no está configurado correctamente.")
-        return redirect('home')  # Redirige a una página segura o de inicio
+        return redirect('home')
 
-    # Inicializar URLs de QR
     qr_code_entrada_url = None
     qr_code_salida_url = None
 
-    # Verificar si ya se generó un QR de entrada hoy
-    entrada_generada = default_storage.exists(f'static/img/qr_codes/entrada_{usuario.id}_{timezone.now().date()}.png')
-    
+    entrada_generada = default_storage.exists(f'qr_codes/entrada_{usuario.id}_{timezone.now().date()}.png')
+
     if entrada_generada:
         messages.info(request, "Ya has generado un QR de entrada para hoy.")
+        qr_code_entrada_url = default_storage.url(f'qr_codes/entrada_{usuario.id}_{timezone.now().date()}.png')
     else:
         # Generar QR de entrada
         qr_entrada = qrcode.QRCode(
@@ -280,16 +279,15 @@ def generar_qr_view(request):
         buffer_entrada = BytesIO()
         img_entrada.save(buffer_entrada, 'PNG')
         buffer_entrada.seek(0)
-        file_name_entrada = f'static/img/qr_codes/entrada_{usuario.id}_{timezone.now().date()}.png'
+        file_name_entrada = f'qr_codes/entrada_{usuario.id}_{timezone.now().date()}.png'
         file_path_entrada = default_storage.save(file_name_entrada, ContentFile(buffer_entrada.read()))
         qr_code_entrada_url = request.build_absolute_uri(settings.MEDIA_URL + file_name_entrada)
 
-
-    # Verificar si ya se generó un QR de salida después de 4 horas
-    salida_generada = default_storage.exists(f'static/img/qr_codes/salida_{usuario.id}_{timezone.now().date()}.png')
+    salida_generada = default_storage.exists(f'qr_codes/salida_{usuario.id}_{timezone.now().date()}.png')
 
     if salida_generada:
         messages.info(request, "Ya has generado un QR de salida para hoy.")
+        qr_code_salida_url = default_storage.url(f'qr_codes/salida_{usuario.id}_{timezone.now().date()}.png')
     elif usuario.asistencia_set.filter(fecha_salida__isnull=True, fecha_entrada__date=timezone.now().date()).exists():
         asistencia = usuario.asistencia_set.filter(fecha_salida__isnull=True, fecha_entrada__date=timezone.now().date()).first()
         tiempo_transcurrido = timezone.now() - asistencia.fecha_entrada
@@ -309,9 +307,9 @@ def generar_qr_view(request):
             buffer_salida = BytesIO()
             img_salida.save(buffer_salida, 'PNG')
             buffer_salida.seek(0)
-            file_name_salida = f'static/img/qr_codes/salida_{usuario.id}_{timezone.now().date()}.png'
+            file_name_salida = f'qr_codes/salida_{usuario.id}_{timezone.now().date()}.png'
             file_path_salida = default_storage.save(file_name_salida, ContentFile(buffer_salida.read()))
-            qr_code_salida_url = default_storage.url(file_path_salida)
+            qr_code_salida_url = request.build_absolute_uri(settings.MEDIA_URL + file_name_salida)
 
     return render(request, 'qr.html', {'qr_code_entrada_url': qr_code_entrada_url, 'qr_code_salida_url': qr_code_salida_url})
 
@@ -323,7 +321,7 @@ def registrar_asistencia_view(request, usuario_id, tipo):
     usuario = get_object_or_404(Usuario, id=usuario_id)
     if tipo == 'entrada':
         if Asistencia.objects.filter(usuario=usuario, fecha_entrada__date=timezone.now().date()).exists():
-            messages.error(request, 'Ya se ha generado un QR de entrada para hoy.')
+            messages.error(request, 'Ya se ha registrado una entrada para hoy.')
             return redirect('generar_qr')  # Redirige al formulario de generación de QR
         asistencia = Asistencia.objects.create(
             usuario=usuario,
@@ -334,7 +332,7 @@ def registrar_asistencia_view(request, usuario_id, tipo):
         asistencia = Asistencia.objects.filter(usuario=usuario, fecha_salida__isnull=True).first()
         if asistencia:
             if Asistencia.objects.filter(usuario=usuario, fecha_salida__date=timezone.now().date()).exists():
-                messages.error(request, 'Ya se ha generado un QR de salida para hoy.')
+                messages.error(request, 'Ya se ha registrado una salida para hoy.')
                 return redirect('generar_qr')  # Redirige al formulario de generación de QR
             asistencia.fecha_salida = timezone.now()
             asistencia.save()
@@ -345,13 +343,25 @@ def registrar_asistencia_view(request, usuario_id, tipo):
             usuario.save()
 
             # Verificar si faltan 20 horas para completar el servicio/residencia
-            if usuario.horas_requeridas - usuario.horas_realizadas <= 20:
+            horas_faltantes = usuario.horas_requeridas - usuario.horas_realizadas
+            if horas_faltantes <= 20:
+                subject = 'Advertencia: Servicio/Residencia casi completo'
+                message = (
+                    f'Hola {usuario.nombre},\n\n'
+                    f'Te faltan menos de 20 horas para completar tu {usuario.tipo_servicio}.\n\n'
+                    f'¡Sigue así!\n\n'
+                    f'Saludos,\n'
+                    f'El equipo de Control de Asistencias'
+                )
+                from_email = settings.DEFAULT_FROM_EMAIL
+                send_mail(subject, message, from_email, [usuario.correo_electronico])
+
+                # Enviar correo al administrador
                 send_mail(
-                    'Servicio/Residencia casi completo',
-                    f'Hola {usuario.nombre}, te faltan menos de 20 horas para completar tu {usuario.tipo_servicio}.',
-                    settings.DEFAULT_FROM_EMAIL,
-                    [usuario.correo_electronico],
-                    fail_silently=False,
+                    subject,
+                    f'El usuario {usuario.nombre} está a punto de completar su {usuario.tipo_servicio}. Faltan {horas_faltantes} horas.',
+                    from_email,
+                    [settings.ADMIN_EMAIL]  # Asumiendo que ADMIN_EMAIL está configurado en settings
                 )
         return redirect('entrada_exitosa', asistencia_id=asistencia.id)
 
@@ -404,4 +414,4 @@ def dashboard_view(request):
         'conteos_diarios': json.dumps(conteos_diarios),
     }
     
-    return render(request, 'dashboard.html', context)
+    return render(request, 'admin_dashboard.html', context)
