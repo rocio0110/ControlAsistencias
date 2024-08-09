@@ -46,26 +46,6 @@ class Usuario(models.Model):
         dias_necesarios = (self.horas_requeridas - self.horas_realizadas) / 4  # Asumiendo 4 horas por día
         return self.fecha_registro + timedelta(days=dias_necesarios)
 
-@receiver(post_save, sender=Usuario)
-def create_user_profile(sender, instance, created, **kwargs):
-    if created:
-        # Generar usuario y contraseña basados en nombre y apellidos
-        username = instance.nombre.lower()[:30]  # Limitar longitud del username para evitar problemas
-        password = (instance.apellido_paterno[:2] + instance.apellido_materno[:2]).lower()
-
-        # Crear usuario en el sistema de autenticación de Django
-        user = User.objects.create_user(username=username, password=password)
-        instance.user = user
-        instance.save()
-
-        # Enviar correo con usuario y contraseña
-        send_mail(
-            'Usuario creado',
-            f'Tu usuario es {username} y tu contraseña es {password}',
-            settings.DEFAULT_FROM_EMAIL,
-            [instance.correo_electronico],
-            fail_silently=False,
-        )
 
 
 from django.utils import timezone
