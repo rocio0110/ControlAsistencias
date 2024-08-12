@@ -246,7 +246,11 @@ def generar_qr_view(request):
     qr_code_salida_url = None
 
     # Define the correct static directory for saving QR codes
-    qr_code_static_path = os.path.join(settings.BASE_DIR, 'asistencia/static/qr_codes/')
+    # Obtener la ruta absoluta del directorio actual
+    current_directory = os.path.dirname(os.path.abspath(__file__))
+
+    # Construir la ruta absoluta de credentials.json
+    qr_code_static_path = os.path.join(current_directory, 'static','qr_codes')
 
     entrada_generada = os.path.exists(os.path.join(qr_code_static_path, f'entrada_{usuario.id}_{timezone.now().date()}.png'))
 
