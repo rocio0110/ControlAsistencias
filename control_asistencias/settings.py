@@ -60,9 +60,14 @@ MIDDLEWARE = [
 ]
 
 
+# Añadir esta línea para incluir la carpeta de archivos estáticos
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'asistencia/static'),
+]
+
+# Configuración de archivos estáticos
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-# Utiliza WhiteNoise para servir archivos estáticos en producción
 STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 
 ROOT_URLCONF = 'control_asistencias.urls'
@@ -157,10 +162,6 @@ DEFAULT_FROM_EMAIL = 'chio7933@gmail.com'
 
 
 ADMIN_EMAIL = 'admin@example.com'  # Reemplaza con el correo del administrador
-
-
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
 
