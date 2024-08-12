@@ -234,18 +234,6 @@ class LockScreen(View):
     def get(self, request):
         return render(request, 'lock_screen.html')
 
-import qrcode
-from io import BytesIO
-from datetime import timedelta
-from django.utils import timezone
-from django.core.files.storage import default_storage
-from django.core.files.base import ContentFile
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from django.conf import settings
-from django.contrib.auth.decorators import login_required
-from .models import Usuario
-
 @login_required
 def generar_qr_view(request):
     try:
@@ -257,13 +245,16 @@ def generar_qr_view(request):
     qr_code_entrada_url = None
     qr_code_salida_url = None
 
-    entrada_generada = default_storage.exists(f'qr_codes/entrada_{usuario.id}_{timezone.now().date()}.png')
+    # Define the correct static directory for saving QR codes
+    qr_code_static_path = os.path.join(settings.BASE_DIR, 'asistencia/static/qr_codes/')
+
+    entrada_generada = os.path.exists(os.path.join(qr_code_static_path, f'entrada_{usuario.id}_{timezone.now().date()}.png'))
 
     if entrada_generada:
         messages.info(request, "Ya has generado un QR de entrada para hoy.")
-        qr_code_entrada_url = default_storage.url(f'qr_codes/entrada_{usuario.id}_{timezone.now().date()}.png')
+        qr_code_entrada_url = os.path.join(settings.STATIC_URL, f'qr_codes/entrada_{usuario.id}_{timezone.now().date()}.png')
     else:
-        # Generar QR de entrada
+        # Generate and save the entry QR code
         qr_entrada = qrcode.QRCode(
             version=1,
             error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -276,23 +267,20 @@ def generar_qr_view(request):
         qr_entrada.make(fit=True)
         img_entrada = qr_entrada.make_image(fill='black', back_color='white')
 
-        buffer_entrada = BytesIO()
-        img_entrada.save(buffer_entrada, 'PNG')
-        buffer_entrada.seek(0)
-        file_name_entrada = f'qr_codes/entrada_{usuario.id}_{timezone.now().date()}.png'
-        file_path_entrada = default_storage.save(file_name_entrada, ContentFile(buffer_entrada.read()))
-        qr_code_entrada_url = request.build_absolute_uri(settings.MEDIA_URL + file_name_entrada)
+        file_name_entrada = f'entrada_{usuario.id}_{timezone.now().date()}.png'
+        img_entrada.save(os.path.join(qr_code_static_path, file_name_entrada))
+        qr_code_entrada_url = os.path.join(settings.STATIC_URL, f'qr_codes/{file_name_entrada}')
 
-    salida_generada = default_storage.exists(f'qr_codes/salida_{usuario.id}_{timezone.now().date()}.png')
+    salida_generada = os.path.exists(os.path.join(qr_code_static_path, f'salida_{usuario.id}_{timezone.now().date()}.png'))
 
     if salida_generada:
         messages.info(request, "Ya has generado un QR de salida para hoy.")
-        qr_code_salida_url = default_storage.url(f'qr_codes/salida_{usuario.id}_{timezone.now().date()}.png')
+        qr_code_salida_url = os.path.join(settings.STATIC_URL, f'qr_codes/salida_{usuario.id}_{timezone.now().date()}.png')
     elif usuario.asistencia_set.filter(fecha_salida__isnull=True, fecha_entrada__date=timezone.now().date()).exists():
         asistencia = usuario.asistencia_set.filter(fecha_salida__isnull=True, fecha_entrada__date=timezone.now().date()).first()
         tiempo_transcurrido = timezone.now() - asistencia.fecha_entrada
         if tiempo_transcurrido >= timedelta(hours=4):
-            # Generar QR de salida
+            # Generate and save the exit QR code
             qr_salida = qrcode.QRCode(
                 version=1,
                 error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -304,16 +292,11 @@ def generar_qr_view(request):
             qr_salida.make(fit=True)
             img_salida = qr_salida.make_image(fill='black', back_color='white')
 
-            buffer_salida = BytesIO()
-            img_salida.save(buffer_salida, 'PNG')
-            buffer_salida.seek(0)
-            file_name_salida = f'qr_codes/salida_{usuario.id}_{timezone.now().date()}.png'
-            file_path_salida = default_storage.save(file_name_salida, ContentFile(buffer_salida.read()))
-            qr_code_salida_url = request.build_absolute_uri(settings.MEDIA_URL + file_name_salida)
+            file_name_salida = f'salida_{usuario.id}_{timezone.now().date()}.png'
+            img_salida.save(os.path.join(qr_code_static_path, file_name_salida))
+            qr_code_salida_url = os.path.join(settings.STATIC_URL, f'qr_codes/{file_name_salida}')
 
     return render(request, 'qr.html', {'qr_code_entrada_url': qr_code_entrada_url, 'qr_code_salida_url': qr_code_salida_url})
-
-    
 
 
 @login_required

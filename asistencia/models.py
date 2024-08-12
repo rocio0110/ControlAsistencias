@@ -7,6 +7,10 @@ from django.dispatch import receiver
 from datetime import timedelta
 from django.core.mail import send_mail
 from django.core.exceptions import ValidationError
+from django.utils import timezone
+from django.core.exceptions import ValidationError
+from django.db import models
+from datetime import timedelta
 
 
 class Usuario(models.Model):
@@ -47,11 +51,6 @@ class Usuario(models.Model):
         return self.fecha_registro + timedelta(days=dias_necesarios)
 
 
-
-from django.utils import timezone
-from django.core.exceptions import ValidationError
-from django.db import models
-from datetime import timedelta
 
 class Asistencia(models.Model):
     usuario = models.ForeignKey(Usuario, on_delete=models.PROTECT)

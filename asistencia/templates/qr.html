@@ -25,7 +25,7 @@
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            max-width: 600px; /* Limita el ancho máximo */
+            max-width: 300px; /* Limita el ancho máximo */
             width: 90%; /* Aprovecha el ancho disponible */
             margin: 20px; /* Añade espacio alrededor del contenedor */
         }
@@ -36,7 +36,7 @@
         }
 
         img {
-            max-width: 100%;
+            max-width: 200px;
             height: auto;
             margin-top: 20px;
         }
@@ -63,12 +63,13 @@
         <div class="login-wrap">
             <center><img class="img-circle" src="{% static 'img/LOGO.jpg' %}" width="100px" height="100px" align=""></center>
             <h1>QR de Entrada</h1>
-    <img src="{{ qr_code_entrada_url }}" alt="QR Entrada">
+            <img src="{{ qr_code_entrada_url }}" alt="QR Entrada">
 
-    {% if qr_code_salida_url %}
-        <h1>QR de Salida</h1>
-        <img src="{{ qr_code_salida_url }}" alt="QR Salida">
-    {% endif %}
+            {% if qr_code_salida_url %}
+                <h1>QR de Salida</h1>
+                <img src="{{ qr_code_salida_url }}" alt="QR Salida">
+            {% endif %}
+            
             <div>
                 <a href="{% url 'home' %}" class="btn">Volver al inicio</a>
                 <a href="{% url 'login' %}" class="btn">Cerrar sesión</a>
