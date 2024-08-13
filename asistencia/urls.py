@@ -1,4 +1,3 @@
-
 from django.urls import path
 from .views import *
 from asistencia import views
@@ -25,9 +24,10 @@ urlpatterns = [
     path('calendar/', Calendar.as_view(), name='calendar'), 
     path('reporte/', generar_reporte_view, name='reporte'),
     path('reporte/pdf/', generar_reporte_pdf_view, name='reporte_pdf'),   
+]
 
+# Configuración para servir archivos estáticos
+urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
-]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-
-
-
+# Configuración para servir archivos multimedia (como los QR codes)
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

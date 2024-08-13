@@ -138,6 +138,9 @@ USE_TZ = True
 
 
 
+# Configuración de archivos multimedia
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
 
