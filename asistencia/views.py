@@ -128,11 +128,8 @@ from django.db import IntegrityError
 import random
 
 def generate_password(nombre, apellido_paterno, apellido_materno):
-    # Toma los primeros dos caracteres de los apellidos
     base_password = (apellido_paterno[:2] + apellido_materno[:2]).lower()
-    # Genera 4 dígitos aleatorios
     random_digits = ''.join(random.choices('0123456789', k=4))
-    # Combina la base con los dígitos aleatorios
     return base_password + random_digits
 
 @login_required
@@ -148,7 +145,7 @@ def agregar_usuario(request):
             tipo_servicio = form.cleaned_data['tipo_servicio']
 
             username = nombre
-            password = generate_password(nombre, apellido_paterno, apellido_materno)  # Genera la contraseña
+            password = generate_password(nombre, apellido_paterno, apellido_materno)
 
             if User.objects.filter(username=username).exists():
                 messages.error(request, 'El nombre de usuario ya está en uso.')
@@ -167,7 +164,7 @@ def agregar_usuario(request):
             )
 
             subject = 'Tu cuenta ha sido creada'
-            message = f'Hola {nombre},\n\nTu cuenta ha sido creada con éxito.\n\nNombre de usuario: {username}\nContraseña: {password}\n\n\n\nSaludos,\nEl equipo de Control de Asistencias'
+            message = f'Hola {nombre},\n\nTu cuenta ha sido creada con éxito.\n\nNombre de usuario: {username}\nContraseña: {password}\n\nSaludos,\nEl equipo de Control de Asistencias'
             from_email = settings.DEFAULT_FROM_EMAIL
             send_mail(subject, message, from_email, [correo_electronico])
 
