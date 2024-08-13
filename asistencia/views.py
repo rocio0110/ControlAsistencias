@@ -251,7 +251,7 @@ def generar_qr_view(request):
     current_directory = os.path.dirname(os.path.abspath(__file__))
 
     # Construir la ruta absoluta de credentials.json
-    qr_code_static_path = os.path.join(current_directory, 'static','qr_codes')
+    qr_code_static_path = os.path.join(current_directory, 'static','img','qr_codes')
 
     entrada_generada = os.path.exists(os.path.join(qr_code_static_path, f'entrada_{usuario.id}_{timezone.now().date()}.png'))
 
@@ -266,7 +266,7 @@ def generar_qr_view(request):
             box_size=10,
             border=4,
         )
-        domain = settings.RENDER_EXTERNAL_HOSTNAME or 'http://127.0.0.1:8000'
+        domain = settings.RENDER_EXTERNAL_HOSTNAME or 'http://127.0.0.1:8000' or 'https://controlasistencias-ykec.onrender.com'
         qr_entrada_url = f'{domain}/registrar_asistencia/{usuario.id}/entrada'
         qr_entrada.add_data(qr_entrada_url)
         qr_entrada.make(fit=True)
