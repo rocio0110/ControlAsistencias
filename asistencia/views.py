@@ -266,8 +266,8 @@ def generar_qr_view(request):
             box_size=10,
             border=4,
         )
-        domain = settings.RENDER_EXTERNAL_HOSTNAME or 'http://127.0.0.1:8000' or 'https://controlasistencias-ykec.onrender.com'
-        qr_entrada_url = f'{domain}/registrar_asistencia/{usuario.id}/entrada'
+        domain = settings.RENDER_EXTERNAL_HOSTNAME or 'http://127.0.0.1:8000'
+        qr_entrada_url = f'{domain}/entrada_exitosa/{usuario.id}/entrada'
         qr_entrada.add_data(qr_entrada_url)
         qr_entrada.make(fit=True)
         img_entrada = qr_entrada.make_image(fill='black', back_color='white')
@@ -292,7 +292,7 @@ def generar_qr_view(request):
                 box_size=10,
                 border=4,
             )
-            qr_salida_url = f'{domain}/registrar_asistencia/{usuario.id}/salida'
+            qr_salida_url = f'{domain}/entrada_exitosa/{usuario.id}/salida'
             qr_salida.add_data(qr_salida_url)
             qr_salida.make(fit=True)
             img_salida = qr_salida.make_image(fill='black', back_color='white')
