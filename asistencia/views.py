@@ -260,7 +260,7 @@ def generar_qr_view(request):
         qr_code_entrada_url = os.path.join(settings.MEDIA_URL, f'img/{file_name_entrada}')
     else:
         # Generate and save the entry QR code using segno
-        domain = settings.RENDER_EXTERNAL_HOSTNAME or 'https://controlasistencias-ykec.onrender.com/'
+        domain = settings.RENDER_EXTERNAL_HOSTNAME or 'http://127.0.0.1:8000'
         qr_entrada_url = f'{domain}/registro_exitoso/{usuario.id}/entrada'
 
         qr_entrada = segno.make(qr_entrada_url)
