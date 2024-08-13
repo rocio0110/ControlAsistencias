@@ -265,7 +265,9 @@ def generar_qr_view(request):
             box_size=10,
             border=4,
         )
-        domain = settings.RENDER_EXTERNAL_HOSTNAME or 'http://127.0.0.1:8000'
+        # domain = settings.RENDER_EXTERNAL_HOSTNAME or 'http://127.0.0.1:8000'
+        domain = settings.RENDER_EXTERNAL_HOSTNAME or 'https://controlasistencias-ykec.onrender.com/'
+        
         qr_entrada_url = f'{domain}/registro_exitoso/{usuario.id}/entrada'
         qr_entrada.add_data(qr_entrada_url)
         qr_entrada.make(fit=True)

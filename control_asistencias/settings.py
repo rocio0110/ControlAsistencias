@@ -60,10 +60,6 @@ MIDDLEWARE = [
 ]
 
 
-# Añadir esta línea para incluir la carpeta de archivos estáticos
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'asistencia/static'),
-]
 
 # Configuración de archivos estáticos
 STATIC_URL = '/static/'
