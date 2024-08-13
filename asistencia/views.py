@@ -1,3 +1,5 @@
+
+
 from django.shortcuts import render, redirect, get_object_or_404, HttpResponse
 from django.urls import reverse
 from django.views.generic import View
@@ -22,8 +24,29 @@ import string
 import os
 
 
+class BasicTable(LoginRequiredMixin, View):
+    def get(self, request):
+        return render(request, 'basic_table.html')
+
+class ResponsiveTable(LoginRequiredMixin, View):
+    def get(self, request):
+        return render(request, 'responsive_table.html')
+    
+class GestionarUsuarios(LoginRequiredMixin, View):
+    def get(self, request):
+        return render(request, 'gestionar_usuarios.html')
+    
+class Calendar(LoginRequiredMixin, View):
+    def get(self, request):
+        return render(request, 'calendar.html')
+    
+class LockScreen(View):
+    def get(self, request):
+        return render(request, 'lock_screen.html')
+
+
 def generate_unique_username(base_username):
-    # Asegúrate de que el nombre de usuario sea único
+    # Asegúra de que el nombre de usuario sea único
     unique_username = base_username
     while User.objects.filter(username=unique_username).exists():
         unique_username = f"{base_username}_{random.randint(1000, 9999)}"
@@ -62,7 +85,7 @@ def login_view(request):
             user = form.get_user()
             auth_login(request, user)  # Usa auth_login en lugar de login
             if user.is_superuser:
-                return redirect('admin_dashboard')  # Asegúrate de que el nombre de la URL coincida
+                return redirect('admin_dashboard')  #nombre de la URL 
             else:
                 return redirect('generar_qr')  # Redirige a donde quieras para usuarios normales
     else:
@@ -102,12 +125,21 @@ def admin_dashboard_view(request):
 
 from django.db import IntegrityError
 
+import random
+
+def generate_password(nombre, apellido_paterno, apellido_materno):
+    # Toma los primeros dos caracteres de los apellidos
+    base_password = (apellido_paterno[:2] + apellido_materno[:2]).lower()
+    # Genera 4 dígitos aleatorios
+    random_digits = ''.join(random.choices('0123456789', k=4))
+    # Combina la base con los dígitos aleatorios
+    return base_password + random_digits
+
 @login_required
 def agregar_usuario(request):
     if request.method == 'POST':
         form = UsuarioForm(request.POST)
         if form.is_valid():
-            # Extract form data
             nombre = form.cleaned_data['nombre']
             apellido_paterno = form.cleaned_data['apellido_paterno']
             apellido_materno = form.cleaned_data['apellido_materno']
@@ -115,19 +147,15 @@ def agregar_usuario(request):
             correo_electronico = form.cleaned_data['correo_electronico']
             tipo_servicio = form.cleaned_data['tipo_servicio']
 
-            # Generate username and password
             username = nombre
-            password = (apellido_paterno[:2] + apellido_materno[:2]).lower()
+            password = generate_password(nombre, apellido_paterno, apellido_materno)  # Genera la contraseña
 
-            # Check if username already exists
             if User.objects.filter(username=username).exists():
                 messages.error(request, 'El nombre de usuario ya está en uso.')
                 return render(request, 'agregar_usuario.html', {'form': form})
 
-            # Create the user
             user = User.objects.create_user(username=username, password=password, email=correo_electronico)
             
-            # Create the Usuario profile instance
             Usuario.objects.create(
                 user=user,
                 nombre=nombre,
@@ -138,9 +166,8 @@ def agregar_usuario(request):
                 tipo_servicio=tipo_servicio
             )
 
-            # Send credentials to the user via email
             subject = 'Tu cuenta ha sido creada'
-            message = f'Hola {nombre},\n\nTu cuenta ha sido creada con éxito.\n\nNombre de usuario: {username}\nContraseña: {password}\n\nPor favor, cámbiala al iniciar sesión.\n\nSaludos,\nEl equipo de Control de Asistencias'
+            message = f'Hola {nombre},\n\nTu cuenta ha sido creada con éxito.\n\nNombre de usuario: {username}\nContraseña: {password}\n\n\n\nSaludos,\nEl equipo de Control de Asistencias'
             from_email = settings.DEFAULT_FROM_EMAIL
             send_mail(subject, message, from_email, [correo_electronico])
 
@@ -150,6 +177,7 @@ def agregar_usuario(request):
         form = UsuarioForm()
 
     return render(request, 'agregar_usuario.html', {'form': form})
+
 
 
 import logging
@@ -209,30 +237,6 @@ def eliminar_usuario(request, pk):
         return redirect('lista_usuarios')
     return render(request, 'eliminar_usuario.html', {'usuario': usuario})
 
-
-# class Index(LoginRequiredMixin, View):
-#     def get(self, request):
-#         return render(request, 'index.html')
-
-class BasicTable(LoginRequiredMixin, View):
-    def get(self, request):
-        return render(request, 'basic_table.html')
-
-class ResponsiveTable(LoginRequiredMixin, View):
-    def get(self, request):
-        return render(request, 'responsive_table.html')
-    
-class GestionarUsuarios(LoginRequiredMixin, View):
-    def get(self, request):
-        return render(request, 'gestionar_usuarios.html')
-    
-class Calendar(LoginRequiredMixin, View):
-    def get(self, request):
-        return render(request, 'calendar.html')
-    
-class LockScreen(View):
-    def get(self, request):
-        return render(request, 'lock_screen.html')
 
 @login_required
 def generar_qr_view(request):
@@ -356,7 +360,18 @@ def registrar_asistencia_view(request, usuario_id, tipo):
 @login_required
 def entrada_exitosa_view(request, asistencia_id):
     asistencia = get_object_or_404(Asistencia, id=asistencia_id)
-    return render(request, 'entrada_exitosa.html', {'asistencia': asistencia})
+    
+    if asistencia.fecha_salida:
+        # Es una salida
+        return render(request, 'salida_exitosa.html', {'asistencia': asistencia})
+    else:
+        # Es una entrada
+        hora_salida_aproximada = asistencia.fecha_entrada + timedelta(hours=4)
+        return render(request, 'entrada_exitosa.html', {
+            'asistencia': asistencia,
+            'hora_salida_aproximada': hora_salida_aproximada
+        })
+
 
 
 @login_required
