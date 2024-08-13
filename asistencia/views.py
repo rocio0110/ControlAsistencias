@@ -250,13 +250,13 @@ def generar_qr_view(request):
     current_directory = os.path.dirname(os.path.abspath(__file__))
 
     # Construir la ruta absoluta de credentials.json
-    qr_code_static_path = os.path.join(current_directory, 'static','img','qr_codes')
+    qr_code_static_path = os.path.join(current_directory, 'static','img')
 
     entrada_generada = os.path.exists(os.path.join(qr_code_static_path, f'entrada_{usuario.id}_{timezone.now().date()}.png'))
 
     if entrada_generada:
         messages.info(request, "Ya has generado un QR de entrada para hoy.")
-        qr_code_entrada_url = os.path.join(settings.STATIC_URL, f'img/qr_codes/entrada_{usuario.id}_{timezone.now().date()}.png')
+        qr_code_entrada_url = os.path.join(settings.STATIC_URL, f'img/entrada_{usuario.id}_{timezone.now().date()}.png')
     else:
         # Generate and save the entry QR code
         qr_entrada = qrcode.QRCode(
@@ -273,13 +273,13 @@ def generar_qr_view(request):
 
         file_name_entrada = f'entrada_{usuario.id}_{timezone.now().date()}.png'
         img_entrada.save(os.path.join(qr_code_static_path, file_name_entrada))
-        qr_code_entrada_url = os.path.join(settings.STATIC_URL, f'img/qr_codes/{file_name_entrada}')
+        qr_code_entrada_url = os.path.join(settings.STATIC_URL, f'img/{file_name_entrada}')
 
     salida_generada = os.path.exists(os.path.join(qr_code_static_path, f'salida_{usuario.id}_{timezone.now().date()}.png'))
 
     if salida_generada:
         messages.info(request, "Ya has generado un QR de salida para hoy.")
-        qr_code_salida_url = os.path.join(settings.STATIC_URL, f'img/qr_codes/salida_{usuario.id}_{timezone.now().date()}.png')
+        qr_code_salida_url = os.path.join(settings.STATIC_URL, f'img/salida_{usuario.id}_{timezone.now().date()}.png')
     elif usuario.asistencia_set.filter(fecha_salida__isnull=True, fecha_entrada__date=timezone.now().date()).exists():
         asistencia = usuario.asistencia_set.filter(fecha_salida__isnull=True, fecha_entrada__date=timezone.now().date()).first()
         tiempo_transcurrido = timezone.now() - asistencia.fecha_entrada
@@ -298,7 +298,7 @@ def generar_qr_view(request):
 
             file_name_salida = f'salida_{usuario.id}_{timezone.now().date()}.png'
             img_salida.save(os.path.join(qr_code_static_path, file_name_salida))
-            qr_code_salida_url = os.path.join(settings.STATIC_URL, f'qr_codes/{file_name_salida}')
+            qr_code_salida_url = os.path.join(settings.STATIC_URL, f'{file_name_salida}')
 
     return render(request, 'qr.html', {'qr_code_entrada_url': qr_code_entrada_url, 'qr_code_salida_url': qr_code_salida_url})
 
