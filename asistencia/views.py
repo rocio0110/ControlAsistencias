@@ -25,7 +25,6 @@ import os
 
 
 
-
 class BasicTable(LoginRequiredMixin, View):
     def get(self, request):
         return render(request, 'basic_table.html')
@@ -236,7 +235,7 @@ def eliminar_usuario(request, pk):
     return render(request, 'eliminar_usuario.html', {'usuario': usuario})
 
 
-
+from PIL import Image
 
 
 @login_required
@@ -250,63 +249,59 @@ def generar_qr_view(request):
     qr_code_entrada_url = None
     qr_code_salida_url = None
 
-    # Define the correct media directory for saving QR codes
-    qr_code_media_path = os.path.join(settings.MEDIA_ROOT, 'img')
+    # Update the path to the static directory
+    qr_code_static_path = os.path.join(settings.BASE_DIR, 'asistencia', 'static', 'qr_codes')
 
-    # Verifica y crea el directorio si no existe
-    os.makedirs(qr_code_media_path, exist_ok=True)
+    # Fecha actual de la computadora
+    fecha_actual = timezone.localtime().date()
 
-    entrada_generada = os.path.exists(os.path.join(qr_code_media_path, f'entrada_{usuario.id}_{timezone.now().date()}.png'))
+    entrada_generada = os.path.exists(os.path.join(qr_code_static_path, f'entrada_{usuario.id}_{fecha_actual}.png'))
 
     if entrada_generada:
         messages.info(request, "Ya has generado un QR de entrada para hoy.")
-        qr_code_entrada_url = os.path.join(settings.MEDIA_URL, f'img/entrada_{usuario.id}_{timezone.now().date()}.png')
+        qr_code_entrada_url = os.path.join(settings.STATIC_URL, f'qr_codes/entrada_{usuario.id}_{fecha_actual}.png')
     else:
-        # Generate and save the entry QR code
         qr_entrada = qrcode.QRCode(
             version=1,
             error_correction=qrcode.constants.ERROR_CORRECT_L,
             box_size=10,
             border=4,
         )
-        domain = settings.RENDER_EXTERNAL_HOSTNAME or 'https://controlasistencias-ykec.onrender.com/'
-        qr_entrada_url = f'{domain}/registro_exitoso/{usuario.id}/entrada'
+        domain = settings.RENDER_EXTERNAL_HOSTNAME or 'http://127.0.0.1:8000'
+        qr_entrada_url = f'{domain}/registrar_asistencia/{usuario.id}/entrada'
         qr_entrada.add_data(qr_entrada_url)
         qr_entrada.make(fit=True)
         img_entrada = qr_entrada.make_image(fill='black', back_color='white')
 
-        file_name_entrada = f'entrada_{usuario.id}_{timezone.now().date()}.png'
-        img_entrada.save(os.path.join(qr_code_media_path, file_name_entrada))
-        qr_code_entrada_url = os.path.join(settings.MEDIA_URL, f'img/{file_name_entrada}')
+        file_name_entrada = f'entrada_{usuario.id}_{fecha_actual}.png'
+        img_entrada.save(os.path.join(qr_code_static_path, file_name_entrada))
+        qr_code_entrada_url = os.path.join(settings.STATIC_URL, f'qr_codes/{file_name_entrada}')
 
-    salida_generada = os.path.exists(os.path.join(qr_code_media_path, f'salida_{usuario.id}_{timezone.now().date()}.png'))
+    salida_generada = os.path.exists(os.path.join(qr_code_static_path, f'salida_{usuario.id}_{fecha_actual}.png'))
 
     if salida_generada:
         messages.info(request, "Ya has generado un QR de salida para hoy.")
-        qr_code_salida_url = os.path.join(settings.MEDIA_URL, f'img/salida_{usuario.id}_{timezone.now().date()}.png')
-    elif usuario.asistencia_set.filter(fecha_salida__isnull=True, fecha_entrada__date=timezone.now().date()).exists():
-        asistencia = usuario.asistencia_set.filter(fecha_salida__isnull=True, fecha_entrada__date=timezone.now().date()).first()
+        qr_code_salida_url = os.path.join(settings.STATIC_URL, f'qr_codes/salida_{usuario.id}_{fecha_actual}.png')
+    elif usuario.asistencia_set.filter(fecha_salida__isnull=True, fecha_entrada__date=fecha_actual).exists():
+        asistencia = usuario.asistencia_set.filter(fecha_salida__isnull=True, fecha_entrada__date=fecha_actual).first()
         tiempo_transcurrido = timezone.now() - asistencia.fecha_entrada
         if tiempo_transcurrido >= timedelta(hours=4):
-            # Generate and save the exit QR code
             qr_salida = qrcode.QRCode(
                 version=1,
                 error_correction=qrcode.constants.ERROR_CORRECT_L,
                 box_size=10,
                 border=4,
             )
-            qr_salida_url = f'{domain}/registro_exitoso/{usuario.id}/salida'
+            qr_salida_url = f'{domain}/registrar_asistencia/{usuario.id}/salida'
             qr_salida.add_data(qr_salida_url)
             qr_salida.make(fit=True)
             img_salida = qr_salida.make_image(fill='black', back_color='white')
 
-            file_name_salida = f'salida_{usuario.id}_{timezone.now().date()}.png'
-            img_salida.save(os.path.join(qr_code_media_path, file_name_salida))
-            qr_code_salida_url = os.path.join(settings.MEDIA_URL, f'img/{file_name_salida}')
+            file_name_salida = f'salida_{usuario.id}_{fecha_actual}.png'
+            img_salida.save(os.path.join(qr_code_static_path, file_name_salida))
+            qr_code_salida_url = os.path.join(settings.STATIC_URL, f'qr_codes/{file_name_salida}')
 
     return render(request, 'qr.html', {'qr_code_entrada_url': qr_code_entrada_url, 'qr_code_salida_url': qr_code_salida_url})
-
-
 
 
 
@@ -357,7 +352,8 @@ def registrar_asistencia_view(request, usuario_id, tipo):
                     from_email,
                     [settings.ADMIN_EMAIL]  # Asumiendo que ADMIN_EMAIL está configurado en settings
                 )
-        return redirect('entrada_exitosa', asistencia_id=asistencia.id)
+        return redirect('salida_exitosa', asistencia_id=asistencia.id)
+
 
 
 @login_required
