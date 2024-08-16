@@ -56,34 +56,39 @@ from django.db import models
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 
+from django.utils import timezone
+
 class Asistencia(models.Model):
     usuario = models.ForeignKey('Usuario', on_delete=models.PROTECT)
     fecha_entrada = models.DateTimeField(null=True, blank=True)
     fecha_salida = models.DateTimeField(null=True, blank=True)
-    fecha_scan = models.DateTimeField(default=timezone.now)  # Campo para registrar la fecha de escaneo
+    fecha_scan = models.DateTimeField(default=timezone.now)
 
     def clean(self):
-        # Validar que la fecha de salida no sea anterior a la fecha de entrada
         if self.fecha_salida and self.fecha_entrada and self.fecha_salida < self.fecha_entrada:
             raise ValidationError('La fecha de salida no puede ser anterior a la fecha de entrada.')
 
-        # Validar que no se registre más de una entrada en el mismo día para el mismo usuario
         if self.fecha_entrada and Asistencia.objects.filter(
             usuario=self.usuario, fecha_entrada__date=self.fecha_entrada.date()
         ).exclude(id=self.id).exists():
             raise ValidationError('Ya se ha registrado una entrada para este usuario en el día de hoy.')
 
-        # Validar que no se registre más de una salida en el mismo día para el mismo usuario
         if self.fecha_salida and Asistencia.objects.filter(
             usuario=self.usuario, fecha_salida__date=self.fecha_salida.date()
         ).exclude(id=self.id).exists():
             raise ValidationError('Ya se ha registrado una salida para este usuario en el día de hoy.')
 
     def save(self, *args, **kwargs):
-        # Ejecutar validaciones personalizadas antes de guardar
+        # Truncar segundos
+        if self.fecha_entrada:
+            self.fecha_entrada = self.fecha_entrada.replace(second=0, microsecond=0)
+        if self.fecha_salida:
+            self.fecha_salida = self.fecha_salida.replace(second=0, microsecond=0)
+        if self.fecha_scan:
+            self.fecha_scan = self.fecha_scan.replace(second=0, microsecond=0)
+        
         self.clean()
         super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.usuario.nombre} - {self.fecha_entrada}"
-

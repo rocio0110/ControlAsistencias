@@ -313,43 +313,63 @@ def generar_qr_view(request):
     return render(request, 'qr.html', {'qr_code_entrada_url': qr_code_entrada_url, 'qr_code_salida_url': qr_code_salida_url})
 
 
-from django.shortcuts import get_object_or_404, redirect
 from django.utils import timezone
-from .models import Usuario, Asistencia
 
-def registrar_asistencia_view(request, usuario_id, tipo):
-    usuario = get_object_or_404(Usuario, id=usuario_id)
+from django.shortcuts import redirect
+from django.utils import timezone
+from .models import Asistencia, Usuario
 
-    if tipo == 'entrada':
-        if Asistencia.objects.filter(usuario=usuario, fecha_entrada__date=timezone.now().date()).exists():
-            messages.error(request, 'Ya se ha registrado una entrada para hoy.')
-            return redirect('generar_qr')
+def registrar_asistencia_view(request, usuario_id, tipo_qr):
+    try:
+        usuario = Usuario.objects.get(id=usuario_id)
+    except Usuario.DoesNotExist:
+        return redirect('error')  # Redirigir a una vista de error si el usuario no existe
 
-        asistencia = Asistencia.objects.create(
+    ahora = timezone.now()
+    
+    if tipo_qr == 'entrada':
+        asistencia, created = Asistencia.objects.update_or_create(
             usuario=usuario,
-            fecha_entrada=timezone.now(),
-            fecha_scan=timezone.now()  # Registra la hora del escaneo
+            fecha_entrada__date=ahora.date(),
+            defaults={'fecha_entrada': ahora, 'fecha_scan': ahora}
         )
-        return redirect('entrada_exitosa', asistencia_id=asistencia.id)
+    elif tipo_qr == 'salida':
+        asistencia, created = Asistencia.objects.update_or_create(
+            usuario=usuario,
+            fecha_salida__date=ahora.date(),
+            defaults={'fecha_salida': ahora, 'fecha_scan': ahora}
+        )
+    
+    return redirect('entrada_exitosa' if tipo_qr == 'entrada' else 'salida_exitosa')
 
-    elif tipo == 'salida':
-        asistencia = Asistencia.objects.filter(usuario=usuario, fecha_salida__isnull=True).first()
-        if asistencia:
-            if Asistencia.objects.filter(usuario=usuario, fecha_salida__date=timezone.now().date()).exists():
-                messages.error(request, 'Ya se ha registrado una salida para hoy.')
-                return redirect('generar_qr')
+def save(self, *args, **kwargs):
+    try:
+        if self.fecha_entrada:
+            self.fecha_entrada = self.fecha_entrada.replace(second=0, microsecond=0)
+        if self.fecha_salida:
+            self.fecha_salida = self.fecha_salida.replace(second=0, microsecond=0)
+        if self.fecha_scan:
+            self.fecha_scan = self.fecha_scan.replace(second=0, microsecond=0)
+        
+        self.clean()
+        super().save(*args, **kwargs)
+    except Exception as e:
+        # Manejar o registrar la excepción según sea necesario
+        print(f"Error al guardar la asistencia: {e}")
 
-            asistencia.fecha_salida = timezone.now()
-            asistencia.fecha_scan = timezone.now()  # Registra la hora del escaneo
-            asistencia.save()
+def clean(self):
+    if self.fecha_salida and self.fecha_entrada and self.fecha_salida < self.fecha_entrada:
+        raise ValidationError('La fecha de salida no puede ser anterior a la fecha de entrada.')
 
-            horas_trabajadas = (asistencia.fecha_salida - asistencia.fecha_entrada).total_seconds() / 3600
-            usuario.horas_realizadas += horas_trabajadas
-            usuario.save()
+    if self.fecha_entrada and Asistencia.objects.filter(
+        usuario=self.usuario, fecha_entrada__date=self.fecha_entrada.date()
+    ).exclude(id=self.id).exists():
+        raise ValidationError('Ya se ha registrado una entrada para este usuario en el día de hoy.')
 
-            return redirect('salida_exitosa', asistencia_id=asistencia.id)
-
-    return redirect('generar_qr')
+    if self.fecha_salida and Asistencia.objects.filter(
+        usuario=self.usuario, fecha_salida__date=self.fecha_salida.date()
+    ).exclude(id=self.id).exists():
+        raise ValidationError('Ya se ha registrado una salida para este usuario en el día de hoy.')
 
 
 def procesar_qr(request):
@@ -359,9 +379,8 @@ def procesar_qr(request):
         return redirect('error')  # Redirigir a una página de error si no hay datos.
 
     # Ejemplo de cómo extraer el usuario_id y el tipo (entrada o salida) de la URL
-    # Suponiendo que la URL tiene el formato: /registrar_asistencia/usuario_id/tipo
     url_parts = qr_data.split('/')
-    if len(url_parts) < 3:
+    if len(url_parts) < 4:  # Ajusta el índice según el formato de la URL
         return redirect('error')  # Redirigir a una página de error si el formato de la URL es incorrecto.
 
     usuario_id = url_parts[2]  # El usuario_id está en la tercera posición
@@ -372,8 +391,6 @@ def procesar_qr(request):
         return redirect('error')  # Redirigir a una página de error si el tipo es incorrecto.
 
     return redirect('registrar_asistencia', usuario_id=usuario_id, tipo=tipo_qr)
-
-
 
 
 @login_required
@@ -387,6 +404,7 @@ def entrada_exitosa_view(request, asistencia_id):
         'asistencia': asistencia,
         'hora_salida_aproximada': hora_salida_aproximada,
     })
+
 
 @login_required
 def salida_exitosa_view(request, asistencia_id):
@@ -403,17 +421,20 @@ def salida_exitosa_view(request, asistencia_id):
 
 
 
+from django.template.loader import get_template
+from xhtml2pdf import pisa
 
 @login_required
 def generar_reporte_pdf_view(request):
     asistencias = Asistencia.objects.all()
-    template_path = 'reporte_asistencias.html'
-    context = {'asistencias': asistencias}
-    
+    context = {
+        'asistencias': asistencias,
+    }
+
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = 'attachment; filename="reporte_asistencias.pdf"'
     
-    template = get_template(template_path)
+    template = get_template('reporte_asistencias.html')
     html = template.render(context)
     
     pisa_status = pisa.CreatePDF(html, dest=response)
@@ -422,6 +443,7 @@ def generar_reporte_pdf_view(request):
         return HttpResponse('Error al generar el PDF: %s' % pisa_status.err, status=500)
     
     return response
+
 
 @login_required
 def generar_reporte_view(request):
