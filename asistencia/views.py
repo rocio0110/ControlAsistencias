@@ -258,12 +258,13 @@ def generar_qr_view(request):
     qr_code_entrada_url = None
     qr_code_salida_url = None
 
-    # Update the path to the static directory
+    # Actualizar el path al directorio estático
     qr_code_static_path = os.path.join(settings.BASE_DIR, 'asistencia', 'static', 'qr_codes')
 
     # Fecha actual de la computadora
     fecha_actual = timezone.localtime().date()
 
+    # Verificar si ya se generó un QR de entrada para hoy
     entrada_generada = os.path.exists(os.path.join(qr_code_static_path, f'entrada_{usuario.id}_{fecha_actual}.png'))
 
     if entrada_generada:
@@ -286,68 +287,67 @@ def generar_qr_view(request):
         img_entrada.save(os.path.join(qr_code_static_path, file_name_entrada))
         qr_code_entrada_url = os.path.join(settings.STATIC_URL, f'qr_codes/{file_name_entrada}')
 
+    # Verificar si ya se generó un QR de salida para hoy
     salida_generada = os.path.exists(os.path.join(qr_code_static_path, f'salida_{usuario.id}_{fecha_actual}.png'))
 
     if salida_generada:
         messages.info(request, "Ya has generado un QR de salida para hoy.")
         qr_code_salida_url = os.path.join(settings.STATIC_URL, f'qr_codes/salida_{usuario.id}_{fecha_actual}.png')
-    elif usuario.asistencia_set.filter(fecha_salida__isnull=True, fecha_entrada__date=fecha_actual).exists():
-        asistencia = usuario.asistencia_set.filter(fecha_salida__isnull=True, fecha_entrada__date=fecha_actual).first()
-        tiempo_transcurrido = timezone.now() - asistencia.fecha_entrada
-        if tiempo_transcurrido >= timedelta(hours=4):
-            qr_salida = qrcode.QRCode(
-                version=1,
-                error_correction=qrcode.constants.ERROR_CORRECT_L,
-                box_size=10,
-                border=4,
-            )
-            qr_salida_url = f'{domain}/registrar_asistencia/{usuario.id}/salida'
-            qr_salida.add_data(qr_salida_url)
-            qr_salida.make(fit=True)
-            img_salida = qr_salida.make_image(fill='black', back_color='white')
+    else:
+        # Verificar si se ha registrado una entrada hoy y si ha pasado al menos 1 minuto desde la entrada
+        asistencia_actual = Asistencia.objects.filter(usuario=usuario, fecha_salida__isnull=True, fecha_entrada__date=fecha_actual).first()
 
-            file_name_salida = f'salida_{usuario.id}_{fecha_actual}.png'
-            img_salida.save(os.path.join(qr_code_static_path, file_name_salida))
-            qr_code_salida_url = os.path.join(settings.STATIC_URL, f'qr_codes/{file_name_salida}')
+        if asistencia_actual:
+            tiempo_transcurrido = timezone.now() - asistencia_actual.fecha_entrada
+            if tiempo_transcurrido >= timedelta(minutes=1):
+                qr_salida = qrcode.QRCode(
+                    version=1,
+                    error_correction=qrcode.constants.ERROR_CORRECT_L,
+                    box_size=10,
+                    border=4,
+                )
+                qr_salida_url = f'{domain}/registrar_asistencia/{usuario.id}/salida'
+                qr_salida.add_data(qr_salida_url)
+                qr_salida.make(fit=True)
+                img_salida = qr_salida.make_image(fill='black', back_color='white')
+
+                file_name_salida = f'salida_{usuario.id}_{fecha_actual}.png'
+                img_salida.save(os.path.join(qr_code_static_path, file_name_salida))
+                qr_code_salida_url = os.path.join(settings.STATIC_URL, f'qr_codes/{file_name_salida}')
 
     return render(request, 'qr.html', {'qr_code_entrada_url': qr_code_entrada_url, 'qr_code_salida_url': qr_code_salida_url})
 
 
-from django.shortcuts import render, get_object_or_404, redirect
+# views.py
+from django.shortcuts import get_object_or_404, redirect
 from django.utils import timezone
-from .models import Asistencia, Usuario
+from .models import Usuario, Asistencia
 
-@login_required
 def registrar_asistencia_view(request, usuario_id, tipo):
     usuario = get_object_or_404(Usuario, id=usuario_id)
-    now = timezone.now()
+    now = timezone.now().replace(second=0, microsecond=0)
 
     if tipo == 'entrada':
-        # Verifica si ya se registró una entrada hoy para este usuario
         if Asistencia.objects.filter(usuario=usuario, fecha_entrada__date=now.date()).exists():
-            return redirect('entrada_exitosa', asistencia_id=asistencia_id)  # Modificar según corresponda
+            return redirect('entrada_exitosa')
 
-        # Crear una nueva entrada
         asistencia = Asistencia(usuario=usuario, fecha_entrada=now, fecha_scan=now)
         asistencia.save()
-        asistencia_id = asistencia.id
-        
-    elif tipo == 'salida':
-        # Verifica si ya se registró una salida hoy para este usuario
-        if Asistencia.objects.filter(usuario=usuario, fecha_salida__date=now.date()).exists():
-            return redirect('salida_exitosa', asistencia_id=asistencia_id)  # Modificar según corresponda
 
-        # Actualizar la salida existente
+    elif tipo == 'salida':
+        if Asistencia.objects.filter(usuario=usuario, fecha_salida__date=now.date()).exists():
+            return redirect('salida_exitosa')
+
         asistencia = Asistencia.objects.filter(usuario=usuario, fecha_salida__isnull=True).first()
         if asistencia:
             asistencia.fecha_salida = now
             asistencia.fecha_scan = now
             asistencia.save()
-            asistencia_id = asistencia.id
         else:
-            return redirect('salida_exitosa', asistencia_id=0)  # Manejar caso sin asistencia abierta
+            return redirect('salida_exitosa')
 
-    return redirect('entrada_exitosa' if tipo == 'entrada' else 'salida_exitosa', asistencia_id=asistencia_id)
+    return redirect('entrada_exitosa' if tipo == 'entrada' else 'salida_exitosa')
+
 
 
 from django.urls import reverse
@@ -410,9 +410,7 @@ def procesar_qr(request):
 @login_required
 def entrada_exitosa_view(request, asistencia_id):
     asistencia = get_object_or_404(Asistencia, id=asistencia_id)
-    
-    # Calcular la hora de salida aproximada
-    hora_salida_aproximada = asistencia.fecha_entrada + timedelta(hours=4)  # Suponiendo una jornada de 4 horas
+    hora_salida_aproximada = asistencia.fecha_entrada + timedelta(seconds=60)
     
     return render(request, 'entrada_exitosa.html', {
         'asistencia': asistencia,
@@ -424,8 +422,6 @@ def entrada_exitosa_view(request, asistencia_id):
 @login_required
 def salida_exitosa_view(request, asistencia_id):
     asistencia = get_object_or_404(Asistencia, id=asistencia_id)
-    
-    # Calcular las horas trabajadas
     horas_trabajadas = (asistencia.fecha_salida - asistencia.fecha_entrada).total_seconds() / 3600
     
     return render(request, 'salida_exitosa.html', {
