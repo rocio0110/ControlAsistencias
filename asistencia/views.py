@@ -79,6 +79,8 @@ def escanear_qr_view(request):
         'todas_asistencias': todas_asistencias,
     })
 
+
+
 def login_view(request):
     if request.method == 'POST':
         form = AuthenticationForm(request, request.POST)
@@ -144,15 +146,17 @@ def agregar_usuario(request):
             correo_electronico = form.cleaned_data['correo_electronico']
             tipo_servicio = form.cleaned_data['tipo_servicio']
 
+            # Generar username y contraseña
             username = nombre
             password = generate_password(nombre, apellido_paterno, apellido_materno)
 
+            # Verificar si el username ya existe
             if User.objects.filter(username=username).exists():
                 messages.error(request, 'El nombre de usuario ya está en uso.')
                 return render(request, 'agregar_usuario.html', {'form': form})
 
+            # Crear el usuario de Django y el perfil asociado
             user = User.objects.create_user(username=username, password=password, email=correo_electronico)
-            
             Usuario.objects.create(
                 user=user,
                 nombre=nombre,
@@ -163,6 +167,7 @@ def agregar_usuario(request):
                 tipo_servicio=tipo_servicio
             )
 
+            # Enviar email de confirmación
             subject = 'Tu cuenta ha sido creada'
             message = f'Hola {nombre},\n\nTu cuenta ha sido creada con éxito.\n\nNombre de usuario: {username}\nContraseña: {password}\n\nSaludos,\nEl equipo de Control de Asistencias'
             from_email = settings.DEFAULT_FROM_EMAIL
@@ -170,10 +175,14 @@ def agregar_usuario(request):
 
             messages.success(request, 'Usuario agregado exitosamente.')
             return redirect('lista_usuarios')
+        else:
+            messages.error(request, 'Por favor, corrija los errores a continuación.')
     else:
         form = UsuarioForm()
 
     return render(request, 'agregar_usuario.html', {'form': form})
+
+
 
 
 
@@ -304,55 +313,66 @@ def generar_qr_view(request):
     return render(request, 'qr.html', {'qr_code_entrada_url': qr_code_entrada_url, 'qr_code_salida_url': qr_code_salida_url})
 
 
+from django.shortcuts import get_object_or_404, redirect
+from django.utils import timezone
+from .models import Usuario, Asistencia
 
-@login_required
 def registrar_asistencia_view(request, usuario_id, tipo):
     usuario = get_object_or_404(Usuario, id=usuario_id)
+
     if tipo == 'entrada':
         if Asistencia.objects.filter(usuario=usuario, fecha_entrada__date=timezone.now().date()).exists():
             messages.error(request, 'Ya se ha registrado una entrada para hoy.')
-            return redirect('generar_qr')  # Redirige al formulario de generación de QR
+            return redirect('generar_qr')
+
         asistencia = Asistencia.objects.create(
             usuario=usuario,
             fecha_entrada=timezone.now(),
+            fecha_scan=timezone.now()  # Registra la hora del escaneo
         )
         return redirect('entrada_exitosa', asistencia_id=asistencia.id)
+
     elif tipo == 'salida':
         asistencia = Asistencia.objects.filter(usuario=usuario, fecha_salida__isnull=True).first()
         if asistencia:
             if Asistencia.objects.filter(usuario=usuario, fecha_salida__date=timezone.now().date()).exists():
                 messages.error(request, 'Ya se ha registrado una salida para hoy.')
-                return redirect('generar_qr')  # Redirige al formulario de generación de QR
+                return redirect('generar_qr')
+
             asistencia.fecha_salida = timezone.now()
+            asistencia.fecha_scan = timezone.now()  # Registra la hora del escaneo
             asistencia.save()
 
-            # Calcular horas trabajadas y actualizar usuario
             horas_trabajadas = (asistencia.fecha_salida - asistencia.fecha_entrada).total_seconds() / 3600
             usuario.horas_realizadas += horas_trabajadas
             usuario.save()
 
-            # Verificar si faltan 20 horas para completar el servicio/residencia
-            horas_faltantes = usuario.horas_requeridas - usuario.horas_realizadas
-            if horas_faltantes <= 20:
-                subject = 'Advertencia: Servicio/Residencia casi completo'
-                message = (
-                    f'Hola {usuario.nombre},\n\n'
-                    f'Te faltan menos de 20 horas para completar tu {usuario.tipo_servicio}.\n\n'
-                    f'¡Sigue así!\n\n'
-                    f'Saludos,\n'
-                    f'El equipo de Control de Asistencias'
-                )
-                from_email = settings.DEFAULT_FROM_EMAIL
-                send_mail(subject, message, from_email, [usuario.correo_electronico])
+            return redirect('salida_exitosa', asistencia_id=asistencia.id)
 
-                # Enviar correo al administrador
-                send_mail(
-                    subject,
-                    f'El usuario {usuario.nombre} está a punto de completar su {usuario.tipo_servicio}. Faltan {horas_faltantes} horas.',
-                    from_email,
-                    [settings.ADMIN_EMAIL]  # Asumiendo que ADMIN_EMAIL está configurado en settings
-                )
-        return redirect('salida_exitosa', asistencia_id=asistencia.id)
+    return redirect('generar_qr')
+
+
+def procesar_qr(request):
+    qr_data = request.GET.get('qr_data')
+
+    if not qr_data:
+        return redirect('error')  # Redirigir a una página de error si no hay datos.
+
+    # Ejemplo de cómo extraer el usuario_id y el tipo (entrada o salida) de la URL
+    # Suponiendo que la URL tiene el formato: /registrar_asistencia/usuario_id/tipo
+    url_parts = qr_data.split('/')
+    if len(url_parts) < 3:
+        return redirect('error')  # Redirigir a una página de error si el formato de la URL es incorrecto.
+
+    usuario_id = url_parts[2]  # El usuario_id está en la tercera posición
+    tipo_qr = url_parts[3]  # El tipo está en la cuarta posición (entrada o salida)
+
+    # Verificar que el tipo sea válido
+    if tipo_qr not in ['entrada', 'salida']:
+        return redirect('error')  # Redirigir a una página de error si el tipo es incorrecto.
+
+    return redirect('registrar_asistencia', usuario_id=usuario_id, tipo=tipo_qr)
+
 
 
 
@@ -360,16 +380,27 @@ def registrar_asistencia_view(request, usuario_id, tipo):
 def entrada_exitosa_view(request, asistencia_id):
     asistencia = get_object_or_404(Asistencia, id=asistencia_id)
     
-    if asistencia.fecha_salida:
-        # Es una salida
-        return render(request, 'salida_exitosa.html', {'asistencia': asistencia})
-    else:
-        # Es una entrada
-        hora_salida_aproximada = asistencia.fecha_entrada + timedelta(hours=4)
-        return render(request, 'entrada_exitosa.html', {
-            'asistencia': asistencia,
-            'hora_salida_aproximada': hora_salida_aproximada
-        })
+    # Calcular la hora de salida aproximada
+    hora_salida_aproximada = asistencia.fecha_entrada + timedelta(hours=4)  # Suponiendo una jornada de 4 horas
+    
+    return render(request, 'entrada_exitosa.html', {
+        'asistencia': asistencia,
+        'hora_salida_aproximada': hora_salida_aproximada,
+    })
+
+@login_required
+def salida_exitosa_view(request, asistencia_id):
+    asistencia = get_object_or_404(Asistencia, id=asistencia_id)
+    
+    # Calcular las horas trabajadas
+    horas_trabajadas = (asistencia.fecha_salida - asistencia.fecha_entrada).total_seconds() / 3600
+    
+    return render(request, 'salida_exitosa.html', {
+        'asistencia': asistencia,
+        'horas_trabajadas': horas_trabajadas,
+    })
+
+
 
 
 

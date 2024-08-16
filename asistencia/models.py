@@ -18,9 +18,9 @@ class Usuario(models.Model):
     nombre = models.CharField(max_length=100)
     apellido_paterno = models.CharField(max_length=100)
     apellido_materno = models.CharField(max_length=100)
-    telefono = models.CharField(max_length=20)
-    correo_electronico = models.EmailField(max_length=255)
-    # fecha_registro = models.DateField(auto_now_add=True)
+    telefono = models.CharField(max_length=10)
+    correo_electronico = models.EmailField(unique=True)
+    fecha_registro = models.DateField(auto_now_add=True)
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
 
@@ -52,23 +52,38 @@ class Usuario(models.Model):
 
 
 
+from django.db import models
+from django.utils import timezone
+from django.core.exceptions import ValidationError
+
 class Asistencia(models.Model):
-    usuario = models.ForeignKey(Usuario, on_delete=models.PROTECT)
+    usuario = models.ForeignKey('Usuario', on_delete=models.PROTECT)
     fecha_entrada = models.DateTimeField(null=True, blank=True)
     fecha_salida = models.DateTimeField(null=True, blank=True)
-    fecha_scan = models.DateTimeField(default=timezone.now)  # Asegúrate de importar timezone correctamente
+    fecha_scan = models.DateTimeField(default=timezone.now)  # Campo para registrar la fecha de escaneo
 
     def clean(self):
+        # Validar que la fecha de salida no sea anterior a la fecha de entrada
         if self.fecha_salida and self.fecha_entrada and self.fecha_salida < self.fecha_entrada:
             raise ValidationError('La fecha de salida no puede ser anterior a la fecha de entrada.')
-        if self.fecha_entrada and Asistencia.objects.filter(usuario=self.usuario, fecha_entrada__date=self.fecha_entrada.date()).exclude(id=self.id).exists():
+
+        # Validar que no se registre más de una entrada en el mismo día para el mismo usuario
+        if self.fecha_entrada and Asistencia.objects.filter(
+            usuario=self.usuario, fecha_entrada__date=self.fecha_entrada.date()
+        ).exclude(id=self.id).exists():
             raise ValidationError('Ya se ha registrado una entrada para este usuario en el día de hoy.')
-        if self.fecha_salida and Asistencia.objects.filter(usuario=self.usuario, fecha_salida__date=self.fecha_salida.date()).exclude(id=self.id).exists():
+
+        # Validar que no se registre más de una salida en el mismo día para el mismo usuario
+        if self.fecha_salida and Asistencia.objects.filter(
+            usuario=self.usuario, fecha_salida__date=self.fecha_salida.date()
+        ).exclude(id=self.id).exists():
             raise ValidationError('Ya se ha registrado una salida para este usuario en el día de hoy.')
 
     def save(self, *args, **kwargs):
+        # Ejecutar validaciones personalizadas antes de guardar
         self.clean()
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.usuario.user.username} - {self.fecha_entrada}"
+        return f"{self.usuario.nombre} - {self.fecha_entrada}"
+

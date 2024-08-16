@@ -14,8 +14,6 @@ urlpatterns = [
     path('generar_qr/', views.generar_qr_view, name='generar_qr'),
     path('escanear_qr/', views.escanear_qr_view, name='escanear_qr'),
     path('home/', views.home_view, name='home'),  # Home view
-    path('entrada_exitosa/<int:asistencia_id>/', views.entrada_exitosa_view, name='entrada_exitosa'),
-    path('registrar_asistencia/<int:usuario_id>/<str:tipo>/', views.registrar_asistencia_view, name='registrar_asistencia'),
     path('', LockScreen.as_view(), name='lock_screen'),
     path('admin_dashboard/', admin_dashboard_view, name='admin_dashboard'),
     path('escanear/', escanear_qr_view, name='escanear_qr'), 
@@ -23,4 +21,9 @@ urlpatterns = [
     path('calendar/', Calendar.as_view(), name='calendar'), 
     path('reporte/', generar_reporte_view, name='reporte'),
     path('reporte/pdf/', generar_reporte_pdf_view, name='reporte_pdf'),   
+    path('registrar_asistencia/<int:usuario_id>/<str:tipo>/', registrar_asistencia_view, name='registrar_asistencia'),
+    path('entrada_exitosa/<int:asistencia_id>/', entrada_exitosa_view, name='entrada_exitosa'),
+    path('salida_exitosa/<int:asistencia_id>/', salida_exitosa_view, name='salida_exitosa'),
+
+
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

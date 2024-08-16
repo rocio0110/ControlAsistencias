@@ -8,16 +8,50 @@ def generate_password(length=8):
     password = ''.join(random.choice(characters) for i in range(length))
     return password
 
+
 class UsuarioForm(forms.ModelForm):
     class Meta:
         model = Usuario
         fields = ['nombre', 'apellido_paterno', 'apellido_materno', 'telefono', 'correo_electronico', 'tipo_servicio']
+        error_messages = {
+            'nombre': {
+                'required': 'Todos los campos son obligatorios.',
+            },
+            'apellido_paterno': {
+                'required': 'Todos los campos son obligatorios.',
+            },
+            'apellido_materno': {
+                'required': 'Todos los campos son obligatorios.',
+            },
+            'telefono': {
+                'required': 'Todos los campos son obligatorios.',
+                'max_length': 'El teléfono debe tener exactamente 10 dígitos.',
+            },
+            'correo_electronico': {
+                'required': 'Todos los campos son obligatorios.',
+                'invalid': 'Ingresa un correo electrónico válido.',
+            },
+            'tipo_servicio': {
+                'required': 'Todos los campos son obligatorios.',
+            },
+        }
 
-    def clean_correo_electronico(self):
-        correo_electronico = self.cleaned_data.get('correo_electronico')
-        if Usuario.objects.filter(correo_electronico=correo_electronico).exists():
-            raise forms.ValidationError('El correo electrónico ya está en uso.')
-        return correo_electronico
+    def clean_telefono(self):
+        telefono = self.cleaned_data.get('telefono')
+        if len(telefono) != 10:
+            raise forms.ValidationError('El teléfono debe tener exactamente 10 dígitos.')
+        return telefono
+
+    def clean(self):
+        cleaned_data = super().clean()
+        nombre = cleaned_data.get('nombre')
+        apellido_paterno = cleaned_data.get('apellido_paterno')
+        apellido_materno = cleaned_data.get('apellido_materno')
+
+        if Usuario.objects.filter(nombre=nombre, apellido_paterno=apellido_paterno, apellido_materno=apellido_materno).exists():
+            raise forms.ValidationError('Ya existe un usuario con el mismo nombre y apellidos.')
+
+        return cleaned_data
 
 # Formulario para el login
 class LoginForm(forms.Form):
