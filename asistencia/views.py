@@ -22,6 +22,9 @@ from django.contrib.auth.models import User
 import random
 import string
 import os
+import base64
+import pytz
+
 
 
 
@@ -255,21 +258,17 @@ def generar_qr_view(request):
         messages.error(request, "Tu perfil de usuario no está configurado correctamente.")
         return redirect('home')
 
-    qr_code_entrada_url = None
-    qr_code_salida_url = None
-
-    # Actualizar el path al directorio estático
-    qr_code_static_path = os.path.join(settings.BASE_DIR, 'asistencia', 'static', 'qr_codes')
+    qr_code_entrada_base64 = None
+    qr_code_salida_base64 = None
 
     # Fecha actual de la computadora
     fecha_actual = timezone.localtime().date()
 
     # Verificar si ya se generó un QR de entrada para hoy
-    entrada_generada = os.path.exists(os.path.join(qr_code_static_path, f'entrada_{usuario.id}_{fecha_actual}.png'))
+    entrada_generada = Asistencia.objects.filter(usuario=usuario, fecha_entrada__date=fecha_actual).exists()
 
     if entrada_generada:
         messages.info(request, "Ya has generado un QR de entrada para hoy.")
-        qr_code_entrada_url = os.path.join(settings.STATIC_URL, f'qr_codes/entrada_{usuario.id}_{fecha_actual}.png')
     else:
         qr_entrada = qrcode.QRCode(
             version=1,
@@ -283,16 +282,16 @@ def generar_qr_view(request):
         qr_entrada.make(fit=True)
         img_entrada = qr_entrada.make_image(fill='black', back_color='white')
 
-        file_name_entrada = f'entrada_{usuario.id}_{fecha_actual}.png'
-        img_entrada.save(os.path.join(qr_code_static_path, file_name_entrada))
-        qr_code_entrada_url = os.path.join(settings.STATIC_URL, f'qr_codes/{file_name_entrada}')
+        # Convertir la imagen a base64
+        buffer = BytesIO()
+        img_entrada.save(buffer, format="PNG")
+        qr_code_entrada_base64 = base64.b64encode(buffer.getvalue()).decode()
 
     # Verificar si ya se generó un QR de salida para hoy
-    salida_generada = os.path.exists(os.path.join(qr_code_static_path, f'salida_{usuario.id}_{fecha_actual}.png'))
+    salida_generada = Asistencia.objects.filter(usuario=usuario, fecha_salida__date=fecha_actual).exists()
 
     if salida_generada:
         messages.info(request, "Ya has generado un QR de salida para hoy.")
-        qr_code_salida_url = os.path.join(settings.STATIC_URL, f'qr_codes/salida_{usuario.id}_{fecha_actual}.png')
     else:
         # Verificar si se ha registrado una entrada hoy y si ha pasado al menos 1 minuto desde la entrada
         asistencia_actual = Asistencia.objects.filter(usuario=usuario, fecha_salida__isnull=True, fecha_entrada__date=fecha_actual).first()
@@ -311,21 +310,21 @@ def generar_qr_view(request):
                 qr_salida.make(fit=True)
                 img_salida = qr_salida.make_image(fill='black', back_color='white')
 
-                file_name_salida = f'salida_{usuario.id}_{fecha_actual}.png'
-                img_salida.save(os.path.join(qr_code_static_path, file_name_salida))
-                qr_code_salida_url = os.path.join(settings.STATIC_URL, f'qr_codes/{file_name_salida}')
+                # Convertir la imagen a base64
+                buffer = BytesIO()
+                img_salida.save(buffer, format="PNG")
+                qr_code_salida_base64 = base64.b64encode(buffer.getvalue()).decode()
 
-    return render(request, 'qr.html', {'qr_code_entrada_url': qr_code_entrada_url, 'qr_code_salida_url': qr_code_salida_url})
+    return render(request, 'qr.html', {
+        'qr_code_entrada_base64': qr_code_entrada_base64,
+        'qr_code_salida_base64': qr_code_salida_base64
+    })
 
 
-# views.py
-from django.shortcuts import get_object_or_404, redirect
-from django.utils import timezone
-from .models import Usuario, Asistencia
 
 def registrar_asistencia_view(request, usuario_id, tipo):
     usuario = get_object_or_404(Usuario, id=usuario_id)
-    now = timezone.now().replace(second=0, microsecond=0)
+    now = timezone.now().replace(second=0, microsecond=0)  # Elimina segundos y microsegundos
 
     if tipo == 'entrada':
         if Asistencia.objects.filter(usuario=usuario, fecha_entrada__date=now.date()).exists():
@@ -347,6 +346,7 @@ def registrar_asistencia_view(request, usuario_id, tipo):
             return redirect('salida_exitosa')
 
     return redirect('entrada_exitosa' if tipo == 'entrada' else 'salida_exitosa')
+
 
 
 

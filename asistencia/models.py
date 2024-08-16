@@ -1,17 +1,8 @@
 from django.db import models
-from django.conf import settings
 from django.contrib.auth.models import User
 from django.utils import timezone
-from django.db.models.signals import post_save
-from django.dispatch import receiver
 from datetime import timedelta
-from django.core.mail import send_mail
 from django.core.exceptions import ValidationError
-from django.utils import timezone
-from django.core.exceptions import ValidationError
-from django.db import models
-from datetime import timedelta
-
 
 class Usuario(models.Model):
     # Campos de información personal
@@ -50,16 +41,8 @@ class Usuario(models.Model):
         dias_necesarios = (self.horas_requeridas - self.horas_realizadas) / 4  # Asumiendo 4 horas por día
         return self.fecha_registro + timedelta(days=dias_necesarios)
 
-
-
-from django.db import models
-from django.utils import timezone
-from django.core.exceptions import ValidationError
-
-from django.utils import timezone
-
 class Asistencia(models.Model):
-    usuario = models.ForeignKey('Usuario', on_delete=models.PROTECT)
+    usuario = models.ForeignKey(Usuario, on_delete=models.PROTECT)
     fecha_entrada = models.DateTimeField(null=True, blank=True)
     fecha_salida = models.DateTimeField(null=True, blank=True)
     fecha_scan = models.DateTimeField(default=timezone.now)
@@ -87,7 +70,6 @@ class Asistencia(models.Model):
         if self.fecha_scan:
             self.fecha_scan = self.fecha_scan.replace(second=0, microsecond=0)
         
-        self.clean()
         super().save(*args, **kwargs)
 
     def __str__(self):
