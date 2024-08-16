@@ -431,35 +431,35 @@ def salida_exitosa_view(request, asistencia_id):
 
 
 
-from django.template.loader import get_template
-from xhtml2pdf import pisa
+# from django.template.loader import get_template
+# from xhtml2pdf import pisa
 
-@login_required
-def generar_reporte_pdf_view(request):
-    asistencias = Asistencia.objects.all()
-    context = {
-        'asistencias': asistencias,
-    }
+# @login_required
+# def generar_reporte_pdf_view(request):
+#     asistencias = Asistencia.objects.all()
+#     context = {
+#         'asistencias': asistencias,
+#     }
 
-    response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = 'attachment; filename="reporte_asistencias.pdf"'
+#     response = HttpResponse(content_type='application/pdf')
+#     response['Content-Disposition'] = 'attachment; filename="reporte_asistencias.pdf"'
     
-    template = get_template('reporte_asistencias.html')
-    html = template.render(context)
+#     template = get_template('reporte_asistencias.html')
+#     html = template.render(context)
     
-    pisa_status = pisa.CreatePDF(html, dest=response)
+#     pisa_status = pisa.CreatePDF(html, dest=response)
     
-    if pisa_status.err:
-        return HttpResponse('Error al generar el PDF: %s' % pisa_status.err, status=500)
+#     if pisa_status.err:
+#         return HttpResponse('Error al generar el PDF: %s' % pisa_status.err, status=500)
     
-    return response
+#     return response
 
 
-@login_required
-def generar_reporte_view(request):
-    asistencias = Asistencia.objects.all()
-    context = {'asistencias': asistencias}
-    return render(request, 'reporte_asistencias.html', context)
+# @login_required
+# def generar_reporte_view(request):
+#     asistencias = Asistencia.objects.all()
+#     context = {'asistencias': asistencias}
+#     return render(request, 'reporte_asistencias.html', context)
 
 @login_required
 def dashboard_view(request):
