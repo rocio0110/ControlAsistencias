@@ -61,77 +61,7 @@
   </style>
 
   <section id="container">
-    <!-- TOP BAR CONTENT & NOTIFICATIONS -->
-    <!--header start-->
-    <header class="header black-bg">
-      <div class="sidebar-toggle-box">
-        <div class="fa fa-bars tooltips" data-placement="right" data-original-title="Toggle Navigation"></div>
-      </div>
-      <!--logo start-->
-      <a href="{% url 'admin_dashboard' %}" class="logo"><b>Control de Asistencias</b></a>
-      <!--logo end-->
-      <div class="nav notify-row" id="top_menu">
-      </div>
-      <div class="top-menu">
-        <ul class="nav pull-right top-menu">
-          <li><a class="logout" href="{% url 'login' %}">Cerrar sesión</a></li>
-        </ul>
-      </div>
-    </header>
-    <!--header end-->
-
-    <!-- MAIN SIDEBAR MENU -->
-    <!--sidebar start-->
-    <aside>
-      <div id="sidebar"  class="nav-collapse ">
-          <!-- sidebar menu start-->
-          <ul class="sidebar-menu" id="nav-accordion">
-          
-              <p class="centered"><a href="profile.html"><img src="{% static '/img/LOGO.jpg' %}" class="img-circle" width="60"></a></p>
-              <h5 class="centered">Administrador</h5>
-                
-              <li class="mt">
-                  <a class="active" href="index.html">
-                      <i class="fa fa-dashboard"></i>
-                      <span>Dashboard</span>
-                  </a>
-              </li>
-
-              <li class="sub-menu">
-                  <a href="javascript:;" >
-                      <i class="fa fa-desktop"></i>
-                      <span>Agregar usuarios</span>
-                  </a>
-                  <ul class="sub">
-                      <li><a  href="{% url 'agregar_usuario' %}">Agregar Usuarios</a></li>
-                      <li><a  href="{% url 'lista_usuarios' %}">lista de ususarios</a></li>
-
-                  </ul>
-              </li>
-
-              <li class="sub-menu">
-                  <a href="javascript:;" >
-                      <i class="fa fa-cogs"></i>
-                      <span>Calendario</span>
-                  </a>
-                  <ul class="sub">
-                      <li><a  href="{% url 'calendar' %}">Calendario</a></li>
-                  </ul>
-              </li>
-              <li class="sub-menu">
-                  <a href="javascript:;" >
-                      <i class="fa fa-book"></i>
-                      <span>Reportes</span>
-                  </a>
-                  <ul class="sub">
-                      <li><a  href="{% url 'reporte' %}">Generar reportes</a></li>
-
-                  </ul>
-              </li>
-          </ul>
-          <!-- sidebar menu end-->
-      </div>
-  </aside>
+    {% include 'general/menu.html' %}
   <!--sidebar end-->
     <!-- MAIN CONTENT -->
     <!--main content start-->
