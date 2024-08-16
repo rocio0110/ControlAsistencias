@@ -313,34 +313,48 @@ def generar_qr_view(request):
     return render(request, 'qr.html', {'qr_code_entrada_url': qr_code_entrada_url, 'qr_code_salida_url': qr_code_salida_url})
 
 
-from django.utils import timezone
-
-from django.shortcuts import redirect
+from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
 from .models import Asistencia, Usuario
 
-def registrar_asistencia_view(request, usuario_id, tipo_qr):
-    try:
-        usuario = Usuario.objects.get(id=usuario_id)
-    except Usuario.DoesNotExist:
-        return redirect('error')  # Redirigir a una vista de error si el usuario no existe
+@login_required
+def registrar_asistencia_view(request, usuario_id, tipo):
+    usuario = get_object_or_404(Usuario, id=usuario_id)
+    now = timezone.now()
 
-    ahora = timezone.now()
-    
-    if tipo_qr == 'entrada':
-        asistencia, created = Asistencia.objects.update_or_create(
-            usuario=usuario,
-            fecha_entrada__date=ahora.date(),
-            defaults={'fecha_entrada': ahora, 'fecha_scan': ahora}
-        )
-    elif tipo_qr == 'salida':
-        asistencia, created = Asistencia.objects.update_or_create(
-            usuario=usuario,
-            fecha_salida__date=ahora.date(),
-            defaults={'fecha_salida': ahora, 'fecha_scan': ahora}
-        )
-    
-    return redirect('entrada_exitosa' if tipo_qr == 'entrada' else 'salida_exitosa')
+    if tipo == 'entrada':
+        # Verifica si ya se registró una entrada hoy para este usuario
+        if Asistencia.objects.filter(usuario=usuario, fecha_entrada__date=now.date()).exists():
+            return redirect('entrada_exitosa', asistencia_id=asistencia_id)  # Modificar según corresponda
+
+        # Crear una nueva entrada
+        asistencia = Asistencia(usuario=usuario, fecha_entrada=now, fecha_scan=now)
+        asistencia.save()
+        asistencia_id = asistencia.id
+        
+    elif tipo == 'salida':
+        # Verifica si ya se registró una salida hoy para este usuario
+        if Asistencia.objects.filter(usuario=usuario, fecha_salida__date=now.date()).exists():
+            return redirect('salida_exitosa', asistencia_id=asistencia_id)  # Modificar según corresponda
+
+        # Actualizar la salida existente
+        asistencia = Asistencia.objects.filter(usuario=usuario, fecha_salida__isnull=True).first()
+        if asistencia:
+            asistencia.fecha_salida = now
+            asistencia.fecha_scan = now
+            asistencia.save()
+            asistencia_id = asistencia.id
+        else:
+            return redirect('salida_exitosa', asistencia_id=0)  # Manejar caso sin asistencia abierta
+
+    return redirect('entrada_exitosa' if tipo == 'entrada' else 'salida_exitosa', asistencia_id=asistencia_id)
+
+
+from django.urls import reverse
+
+def generar_url_qr(usuario_id, tipo_qr):
+    return reverse('registrar_asistencia', args=[usuario_id, tipo_qr])
+
 
 def save(self, *args, **kwargs):
     try:
@@ -406,6 +420,7 @@ def entrada_exitosa_view(request, asistencia_id):
     })
 
 
+
 @login_required
 def salida_exitosa_view(request, asistencia_id):
     asistencia = get_object_or_404(Asistencia, id=asistencia_id)
@@ -417,7 +432,6 @@ def salida_exitosa_view(request, asistencia_id):
         'asistencia': asistencia,
         'horas_trabajadas': horas_trabajadas,
     })
-
 
 
 
