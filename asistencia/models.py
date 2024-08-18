@@ -26,7 +26,7 @@ class Usuario(models.Model):
     horas_realizadas = models.IntegerField(default=0)  # Se actualizará según las horas realizadas
     horas_requeridas = models.IntegerField()  # Horas requeridas para el servicio
 
-    def __str__(self):
+    def _str_(self):
         return f"{self.nombre} {self.apellido_paterno} {self.apellido_materno}"
 
     def save(self, *args, **kwargs):
@@ -40,4 +40,3 @@ class Usuario(models.Model):
     def fecha_estimada_conclusion(self):
         dias_necesarios = (self.horas_requeridas - self.horas_realizadas) / 4  # Asumiendo 4 horas por día
         return self.fecha_registro + timedelta(days=dias_necesarios)
-

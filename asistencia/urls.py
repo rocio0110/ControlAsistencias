@@ -14,6 +14,9 @@ urlpatterns = [
     path('home/', views.home_view, name='home'),  # Home view
     path('', LockScreen.as_view(), name='lock_screen'),
     path('admin_dashboard/', admin_dashboard_view, name='admin_dashboard'),
+    path('generar_qr/', views.generar_qr, name='generar_qr'),
+    path('inicio/', views.inicio_prestador, name='inicio'),
+    path('reportes_horas/', views.reportes_horas, name='reportes_horas'),
     
    
 

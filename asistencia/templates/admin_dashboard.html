@@ -196,64 +196,7 @@
         </header>
       <!--header end-->
       
-      <!-- **********************************************************************************************************************************************************
-      MAIN SIDEBAR MENU
-      *********************************************************************************************************************************************************** -->
-      <!--sidebar start-->
-      <aside>
-          <div id="sidebar"  class="nav-collapse ">
-              <!-- sidebar menu start-->
-              <ul class="sidebar-menu" id="nav-accordion">
-              
-              	  <p class="centered"><a href="profile.html"><img src="{% static '/img/LOGO.jpg' %}" class="img-circle" width="60"></a></p>
-              	  <h5 class="centered">Administrador</h5>
-              	  	
-                  <li class="mt">
-                      <a class="active" href="index.html">
-                          <i class="fa fa-dashboard"></i>
-                          <span>Dashboard</span>
-                      </a>
-                  </li>
-
-                  <li class="sub-menu">
-                      <a href="javascript:;" >
-                          <i class="fa fa-desktop"></i>
-                          <span>Agregar usuarios</span>
-                      </a>
-                      <ul class="sub">
-                          <li><a  href="{% url 'agregar_usuario' %}">Agregar Usuarios</a></li>
-                          <li><a  href="{% url 'lista_usuarios' %}">lista de ususarios</a></li>
-
-                      </ul>
-                  </li>
-
-                  <li class="sub-menu">
-                      <a href="javascript:;" >
-                          <i class="fa fa-cogs"></i>
-                          <span>Calendario</span>
-                      </a>
-                      <ul class="sub">
-                        <li><a  href="">Calendario</a></li>
-                      </ul>
-                  </li>
-                  <li class="sub-menu">
-                      <a href="javascript:;" >
-                          <i class="fa fa-book"></i>
-                          <span>Reportes</span>
-                      </a>
-                      <ul class="sub">
-                          <li><a  href="">Generar reportes</a></li>
-
-                      </ul>
-                  </li>
-            
-                 
-
-              </ul>
-              <!-- sidebar menu end-->
-          </div>
-      </aside>
-      <!--sidebar end-->
+      {% include 'general/menu.html' %}
       
       <!-- **********************************************************************************************************************************************************
       MAIN CONTENT

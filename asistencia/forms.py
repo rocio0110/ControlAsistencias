@@ -2,11 +2,16 @@ from django import forms
 from .models import Usuario
 import random
 import string
+from django.core.exceptions import ValidationError
+
+
 
 def generate_password(length=8):
     characters = string.ascii_letters + string.digits + string.punctuation
     password = ''.join(random.choice(characters) for i in range(length))
     return password
+
+
 
 
 class UsuarioForm(forms.ModelForm):
@@ -47,9 +52,19 @@ class UsuarioForm(forms.ModelForm):
         nombre = cleaned_data.get('nombre')
         apellido_paterno = cleaned_data.get('apellido_paterno')
         apellido_materno = cleaned_data.get('apellido_materno')
+        correo_electronico = cleaned_data.get('correo_electronico')
 
-        if Usuario.objects.filter(nombre=nombre, apellido_paterno=apellido_paterno, apellido_materno=apellido_materno).exists():
+        # Validación de nombre y apellidos únicos
+        if Usuario.objects.filter(
+            nombre=nombre,
+            apellido_paterno=apellido_paterno,
+            apellido_materno=apellido_materno
+        ).exists():
             raise forms.ValidationError('Ya existe un usuario con el mismo nombre y apellidos.')
+
+        # Validación de correo electrónico único
+        if Usuario.objects.filter(correo_electronico=correo_electronico).exists():
+            raise forms.ValidationError('Ya existe un usuario con el mismo correo electrónico.')
 
         return cleaned_data
 

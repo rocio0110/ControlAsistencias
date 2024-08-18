@@ -8,7 +8,7 @@
   <meta name="author" content="Dashboard">
   <meta name="keyword" content="Dashboard, Bootstrap, Admin, Template, Theme, Responsive, Fluid, Retina">
 
-  <title>Eliminar Usuario</title>
+  <title>Reportes Horas</title>
   <link rel="shortcut icon" href="{% static 'img/LOGO.JPG' %}" type="image/x-icon">
 
   <!-- Bootstrap core CSS -->
@@ -45,57 +45,47 @@
           font-weight: bold;
       }
       
-      .container p {
-          margin-top: 10px;
-          margin-bottom: 20px;
-      }
-      
       .container form {
           margin-top: 20px;
       }
       
-      .container .btn-danger {
-          background-color: #D9534F; /* Color del botón */
-          border-color: #D9534F;
+      .container .btn-primary {
+          background-color: #B08A5B; /* Color del botón */
+          border-color: #B08A5B;
       }
       
-      .container .btn-danger:hover {
-          background-color: #C9302C; /* Color del botón al pasar el ratón */
-          border-color: #C9302C;
-      }
-      
-      .container .btn-secondary {
-          background-color: #5BC0DE; /* Color del botón */
-          border-color: #5BC0DE;
-      }
-      
-      .container .btn-secondary:hover {
-          background-color: #31B0D5; /* Color del botón al pasar el ratón */
-          border-color: #269abc;
+      .container .btn-primary:hover {
+          background-color: #602935; /* Color del botón al pasar el ratón */
+          border-color: #602935;
       }
   </style>
 
   <section id="container">
 
-    {% include 'general/menu.html' %}
+    {% include 'general/menu_prestador.html' %}
 
-    <!-- MAIN CONTENT -->
+    {% comment %} <!-- MAIN CONTENT -->
     <!--main content start-->
     <section id="main-content">
       <section class="wrapper">
         <div class="container">
-          <h2>Eliminar Usuario</h2>
-          <p>¿Estás seguro de que quieres eliminar a {{ usuario.nombre }} {{ usuario.apellido_paterno }} {{ usuario.apellido_materno }}?</p>
-          <form action="" method="post">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-danger">Eliminar</button>
-            <a href="{% url 'lista_usuarios' %}" class="btn btn-secondary">Cancelar</a>
-          </form>
+          {% if messages %}
+          {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+        
+        <form method="post">
+          {% csrf_token %}
+          {{ form.as_p }}
+          <button type="submit" class="btn btn-primary">Agregar Usuario</button>
+        </form>
+        
         </div>
       </section>
     </section>
     <!--main content end-->
-  </section>
+  </section> {% endcomment %}
 
   <!-- Scripts -->
   <script src="{% static 'js/jquery.js' %}"></script>
