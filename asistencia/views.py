@@ -142,7 +142,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from .models import QR, Asistencia, Usuario
 
-
+@login_required
 def procesar_qr(request, qr_id):
     qr = get_object_or_404(QR, id=qr_id)
     usuario = qr.usuario
