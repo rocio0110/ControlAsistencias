@@ -17,7 +17,9 @@ urlpatterns = [
     path('generar_qr/', views.generar_qr, name='generar_qr'),
     path('inicio/', views.inicio_prestador, name='inicio'),
     path('reportes_horas/', views.reportes_horas, name='reportes_horas'),
-    
+    path('procesar_qr/<int:qr_id>/', procesar_qr, name='procesar_qr'),
+    path('entrada_exitosa/', entrada_exitosa, name='entrada_exitosa'),
+    path('salida_exitosa/', salida_exitosa, name='salida_exitosa'),
    
 
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

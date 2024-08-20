@@ -69,23 +69,28 @@
           {% endif %}
             {% if qr_code_entrada_base64 %}
                 <img src="data:image/png;base64,{{ qr_code_entrada_base64 }}" alt="QR Entrada">
+                <!-- Enlace para escanear el QR de entrada -->
+                <a href="{% url 'procesar_qr' qr_data_entrada %}" class="btn">Escanear QR de Entrada</a>
             {% else %}
                 <p>No se ha generado un código QR de entrada para hoy.</p>
             {% endif %}
-
+    
             {% if qr_code_salida_base64 %}
                 <h1>QR de Salida</h1>
                 <img src="data:image/png;base64,{{ qr_code_salida_base64 }}" alt="QR Salida">
+                <!-- Enlace para escanear el QR de salida -->
+                <a href="{% url 'procesar_qr' qr_data_salida %}" class="btn">Escanear QR de Salida</a>
             {% else %}
                 <p>No se ha generado un código QR de salida para hoy.</p>
             {% endif %}
-
+    
             <div>
                 <a href="{% url 'home' %}" class="btn">Volver al inicio</a>
                 <a href="{% url 'login' %}" class="btn">Cerrar sesión</a>
             </div>
         </div>
     </div>
+    
 
     <!-- JavaScript al final del documento para cargar las páginas más rápido -->
     <script src="{% static 'js/jquery.js' %}"></script>
