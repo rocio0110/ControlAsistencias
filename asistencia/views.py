@@ -142,7 +142,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from .models import QR, Asistencia, Usuario
 
-@login_required
+
 def procesar_qr(request, qr_id):
     qr = get_object_or_404(QR, id=qr_id)
     usuario = qr.usuario
@@ -176,72 +176,6 @@ def procesar_qr(request, qr_id):
         return redirect('error_view')
 
 
-
-# @login_required
-# def generar_qr(request):
-#     user = request.user  # Obtén el usuario autenticado
-
-#     # Supongo que tienes un modelo llamado Usuario que está relacionado con User
-#     usuario = Usuario.objects.get(nombre=user.username)  # Filtra por el campo username
-
-#     # Datos a codificar en el QR
-#     qr_data = f"Usuario: {user.username}\nEmail: {user.email}\nNombre: {usuario.nombre} {usuario.apellido_paterno}"
-    
-#     # Generar el QR
-#     qr = qrcode.QRCode(
-#         version=1,
-#         error_correction=qrcode.constants.ERROR_CORRECT_L,
-#         box_size=10,
-#         border=4,
-#     )
-#     qr.add_data(qr_data)
-#     qr.make(fit=True)
-#     img = qr.make_image(fill_color="black", back_color="white")
-    
-#     # Convertir la imagen a PNG en memoria
-#     buffer = BytesIO()
-#     img.save(buffer, format="PNG")
-#     buffer.seek(0)
-    
-#     # Preparar la respuesta de descarga
-#     response = HttpResponse(buffer, content_type='image/png')
-#     response['Content-Disposition'] = f'attachment; filename=QR_{usuario.nombre}.png'
-    
-#     return response  # Devuelve el QR como archivo descargable
-
-
-# from django.shortcuts import render, redirect
-# from django.utils import timezone
-# from .models import QR, Asistencia, Usuario
-
-# @login_required
-# def procesar_qr(request, qr_id):
-#     qr = get_object_or_404(QR, id=qr_id)
-#     usuario = qr.usuario
-
-#     # Verificar si ya existe un registro de entrada o salida en el mismo día
-#     hoy = timezone.now().date()
-#     asistencia = Asistencia.objects.filter(usuario=usuario, fecha_escaneo_entrada__date=hoy).first()
-
-#     if not asistencia:
-#         # Crear un nuevo registro de entrada
-#         asistencia = Asistencia.objects.create(
-#             usuario=usuario,
-#             fecha_escaneo_entrada=timezone.now(),
-#         )
-#         return redirect('entrada_exitosa')
-    
-#     elif not asistencia.fecha_escaneo_salida:
-#         # Registrar la salida
-#         asistencia.fecha_escaneo_salida = timezone.now()
-#         asistencia.horas = asistencia.fecha_escaneo_salida - asistencia.fecha_escaneo_entrada
-#         asistencia.save()
-#         return redirect('salida_exitosa')
-
-#     else:
-#         # Si ya existe una entrada y una salida para hoy
-#         messages.error(request, 'Ya has registrado tu entrada y salida para el día de hoy.')
-#         return redirect('error_view')
 
 
 import random
@@ -369,5 +303,9 @@ def eliminar_usuario(request, pk):
 def inicio_prestador(request):
     return render(request, 'prestador/inicio.html')
 
+
 def reportes_horas(request):
     return render(request, 'prestador/reportes.html')
+
+def dashboard_prestador(request):
+    return render(request, 'prestador/dashboard_prestador.html')

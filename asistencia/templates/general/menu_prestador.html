@@ -30,8 +30,14 @@
       <p class="centered">
         <a href="profile.html"><img src="{% static '/img/LOGO.jpg' %}" class="img-circle" width="60" /></a>
       </p>
-      <h5 class="centered">Bienvenido,{{ user.username }}</h5>
-
+      <h5 class="centered">{{ user.username }}</h5>
+      
+      <li class="mt">
+        <a class="" href="{% url 'dashboard_prestador' %}">
+          <i class="fa fa-dashboard"></i>
+          <span>Dashboard</span>
+        </a>
+      </li>
 
       <li class="mt">
         <a class="" href="{% url 'inicio' %}">
