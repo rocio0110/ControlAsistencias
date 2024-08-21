@@ -22,10 +22,33 @@ import string
 import os
 import base64
 import pytz
+from django.template.loader import get_template
+from xhtml2pdf import pisa
+from .models import Asistencia
+from django.http import JsonResponse
 
 
+def scan_qr_view(request):
+    return render(request, 'scan_qr/scan_qr.html')
 
+def registrar_asistencia(request):
+    if request.method == 'POST':
+        qr_data = request.POST.get('qr_data')
+        
+        try:
+            # Supongamos que en tu QR tienes el nombre de usuario
+            Usuario = Usuario.objects.get(username=qr_data)
+            # Aquí puedes agregar la lógica para registrar la asistencia
+            # Ejemplo:
+            # Asistencia.objects.create(usuario=usuario, fecha=timezone.now())
+            
+            return JsonResponse({'status': 'success', 'message': 'Asistencia registrada con éxito'})
+        except Usuario.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Usuario no encontrado'})
 
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido'})
+
+    
 class BasicTable(LoginRequiredMixin, View):
     def get(self, request):
         return render(request, 'basic_table.html')
@@ -56,21 +79,41 @@ def generate_unique_username(base_username):
 
 
 
+from django.contrib.auth import authenticate, login as auth_login
+from django.shortcuts import render, redirect
+from django.contrib.auth.forms import AuthenticationForm
+from django.http import HttpResponseForbidden
 
 def login_view(request):
     if request.method == 'POST':
         form = AuthenticationForm(request, request.POST)
         if form.is_valid():
             user = form.get_user()
-            auth_login(request, user)  # Usa auth_login en lugar de login
-            if user.is_superuser:
-                return redirect('admin_dashboard')  #nombre de la URL 
+            if user.is_active:
+                auth_login(request, user)  # Usa auth_login en lugar de login
+                if user.is_superuser:
+                    return redirect('admin_dashboard')  # nombre de la URL
+                else:
+                    return redirect('inicio')  # Redirige a donde quieras para usuarios normales
             else:
-                return redirect('inicio')  # Redirige a donde quieras para usuarios normales
+                return HttpResponseForbidden("Tu cuenta está desactivada.")
     else:
         form = AuthenticationForm()
     
     return render(request, 'login.html', {'form': form})
+
+@login_required
+def protected_view(request):
+    # Verificar si el usuario está activo
+    if not request.user.is_active:
+        return HttpResponseForbidden("Acceso denegado")
+
+    # Aquí va el resto del código de la vista
+    # Por ejemplo, puedes renderizar una plantilla:
+    context = {
+        'message': '¡Bienvenido a la vista protegida!',
+    }
+    return render(request, 'protected_template.html', context)
 
 class AdminDashboardView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
@@ -103,16 +146,14 @@ def admin_dashboard_view(request):
     return render(request, 'admin_dashboard.html')
 from django.urls import reverse
 
-@login_required
 def generar_qr(request):
-    user = request.user
-    usuario = Usuario.objects.get(nombre=user.username)
+    user = request.user  # Obtén el usuario autenticado
 
-    # URL para procesar el QR
-    qr_url = request.build_absolute_uri(reverse('procesar_qr', args=[usuario.id]))
+    # Supongo que tienes un modelo llamado Usuario que está relacionado con User
+    usuario = Usuario.objects.get(nombre=user.username)  # Filtra por el campo username
 
     # Datos a codificar en el QR
-    qr_data = f"{qr_url}"
+    qr_data = f"Usuario: {user.username}\nEmail: {user.email}\nNombre: {usuario.nombre} {usuario.apellido_paterno}"
     
     # Generar el QR
     qr = qrcode.QRCode(
@@ -134,8 +175,7 @@ def generar_qr(request):
     response = HttpResponse(buffer, content_type='image/png')
     response['Content-Disposition'] = f'attachment; filename=QR_{usuario.nombre}.png'
     
-    return response
-
+    return response  # Devuelve el QR como archivo descargable
 
 
 from django.shortcuts import render, redirect, get_object_or_404
@@ -249,21 +289,24 @@ from datetime import timedelta
 
 @login_required
 def lista_usuarios(request):
-    usuarios = Usuario.objects.all()
+    # Filtrar solo usuarios activos
+    usuarios = Usuario.objects.filter(activo=True)
+    
+    # Manejo de búsqueda
     query = request.GET.get('q')
     if query:
         usuarios = usuarios.filter(nombre__icontains=query)
-
+    
+    # Calcular horas realizadas y horas faltantes
     for usuario in usuarios:
         try:
-            # Inicializar horas realizadas
             horas_realizadas = 0
-            asistencias = Asistencia.objects.filter(usuario=usuario, fecha_salida__isnull=False)
+            asistencias = Asistencia.objects.filter(usuario=usuario, fecha_escaneo_salida__isnull=False)
             for asistencia in asistencias:
-                if asistencia.fecha_salida and asistencia.fecha_entrada:
-                    delta = asistencia.fecha_salida - asistencia.fecha_entrada
+                if asistencia.fecha_escaneo_entrada and asistencia.fecha_escaneo_salida:
+                    delta = asistencia.fecha_escaneo_salida - asistencia.fecha_escaneo_entrada
                     horas_realizadas += delta.total_seconds() / 3600
-
+            
             usuario.horas_realizadas = horas_realizadas
             usuario.horas_faltantes = usuario.horas_requeridas - horas_realizadas
 
@@ -273,6 +316,7 @@ def lista_usuarios(request):
             usuario.horas_faltantes = usuario.horas_requeridas
 
     return render(request, 'lista_usuarios.html', {'usuarios': usuarios, 'query': query})
+
 
 @login_required
 def editar_usuario(request, pk):
@@ -304,8 +348,82 @@ def inicio_prestador(request):
     return render(request, 'prestador/inicio.html')
 
 
+from django.shortcuts import render
+from .models import Asistencia
+from django.core.paginator import Paginator
+
+@login_required
 def reportes_horas(request):
-    return render(request, 'prestador/reportes.html')
+    # Obtén la instancia de Usuario asociada al usuario autenticado
+    usuario = get_object_or_404(Usuario, user=request.user)
+
+    # Obtén las asistencias del usuario y ordénalas
+    asistencias = Asistencia.objects.filter(usuario=usuario).order_by('fecha_escaneo_entrada')
+
+    # Paginación
+    paginator = Paginator(asistencias, 10)  # Mostrar 10 asistencias por página
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Contexto para la plantilla
+    context = {
+        'page_obj': page_obj,
+        'now': timezone.now(),  # Agrega la fecha y hora actual al contexto
+    }
+
+    return render(request, 'prestador/reportes.html', context)
 
 def dashboard_prestador(request):
     return render(request, 'prestador/dashboard_prestador.html')
+
+
+@login_required
+def marcar_usuario_inactivo(request, usuario_id):
+    usuario = Usuario.objects.get(id=usuario_id)
+    usuario.activo = False
+    usuario.save()
+    return redirect('lista_usuarios')
+
+
+@login_required
+def lista_usuarios_inactivos(request):
+    usuarios_inactivos = Usuario.objects.filter(activo=False)
+    query = request.GET.get('q')
+    
+    if query:
+        usuarios_inactivos = usuarios_inactivos.filter(nombre__icontains=query)
+    
+    return render(request, 'usuarios_inactivos.html', {'usuarios': usuarios_inactivos, 'query': query})
+
+
+from datetime import datetime
+
+def descargar_reporte_pdf(request):
+    # Obtener los datos de Asistencia (puedes filtrar según lo necesites)
+    asistencias = Asistencia.objects.all().order_by('fecha_escaneo_entrada')
+    
+    # Cargar el template HTML y renderizarlo con los datos
+    template = get_template('prestador/reporte_pdf.html')
+    html_content = template.render({
+        'asistencias': asistencias,
+        'now': datetime.now(),  # Utiliza datetime directamente
+    })
+
+    # Crear una respuesta HTTP con el tipo de contenido para PDF
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="reporte_horas.pdf"'
+
+    # Convertir HTML a PDF usando xhtml2pdf
+    pisa_status = pisa.CreatePDF(
+        src=html_content.encode('utf-8'),
+        dest=response,
+        encoding='utf-8'
+    )
+
+    # Verificar si hubo errores en la conversión
+    if pisa_status.err:
+        return HttpResponse('Ocurrió un error al generar el PDF', status=400)
+
+    return response
+
+

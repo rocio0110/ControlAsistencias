@@ -3,6 +3,9 @@ from .views import *
 from asistencia import views
 from django.conf import settings
 from django.conf.urls.static import static
+from django.urls import path
+
+
 
 urlpatterns = [
     path('login/', views.login_view, name='login'),
@@ -21,6 +24,10 @@ urlpatterns = [
     path('procesar_qr/<int:qr_id>/', procesar_qr, name='procesar_qr'),
     path('entrada_exitosa/', entrada_exitosa, name='entrada_exitosa'),
     path('salida_exitosa/', salida_exitosa, name='salida_exitosa'),
-   
-
+    path('inactivos/', lista_usuarios_inactivos, name='usuarios_inactivos'),
+    path('marcar_inactivo/<int:usuario_id>/', marcar_usuario_inactivo, name='marcar_usuario_inactivo'),
+    path('descargar_reporte_pdf/', descargar_reporte_pdf, name='descargar_reporte_pdf'),
+    path('escanear-qr/', scan_qr_view, name='scan_qr'),
+    path('registrar-asistencia/', registrar_asistencia, name='registrar_asistencia'),
+    
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

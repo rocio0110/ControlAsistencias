@@ -7,7 +7,7 @@ class UsuariosBackend(BaseBackend):
     def authenticate(self, request, username=None, password=None, **kwargs):
         try:
             user = User.objects.get(username=username)
-            if user.check_password(password):
+            if user.check_password(password) and user.is_active:  # Verifica si el usuario está activo
                 return user
         except User.DoesNotExist:
             return None
@@ -17,5 +17,3 @@ class UsuariosBackend(BaseBackend):
             return User.objects.get(pk=user_id)
         except User.DoesNotExist:
             return None
-
-

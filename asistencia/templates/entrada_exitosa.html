@@ -93,7 +93,7 @@
         <p><strong>Hora del escaneo:</strong> {{ asistencia.fecha_escaneo_entrada|date:"d/m/Y H:i:s" }}</p>
         <p><strong>Fecha y hora de entrada:</strong> {{ asistencia.fecha_escaneo_entrada|date:"d/m/Y H:i:s" }}</p>
         <p><strong>Hora de salida aproximada:</strong> {{ hora_salida_aproximada }}</p>
-        <a href="" class="btn">Ir al Inicio</a>
+        <a href="{% url 'login' %}" class="btn">Ir al Inicio</a>
     </div>
 
  <!-- Scripts -->

@@ -33,7 +33,6 @@
     <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
   <![endif]-->
   <style>
-    /* Custom styles */
     html, body {
         height: 100%;
         margin: 0;
@@ -48,27 +47,27 @@
     }
 
     .container {
-        background-color: #ffffff; /* Fondo blanco */
-        border: 1px solid #ACADAD; /* Borde gris */
+        background-color: #ffffff;
+        border: 1px solid #ACADAD;
         padding: 20px;
         border-radius: 10px;
         box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-        width: 80%; /* Ajusta el ancho de la tabla */
-        max-width: 900px; /* Máximo ancho */
+        width: 80%;
+        max-width: 900px;
     }
     
     .container h2 {
-        color: #602935; /* Color del título */
+        color: #602935;
         font-weight: bold;
     }
     
     .container .btn-primary {
-        background-color: #B08A5B; /* Color del botón */
+        background-color: #B08A5B;
         border-color: #B08A5B;
     }
     
     .container .btn-primary:hover {
-        background-color: #602935; /* Color del botón al pasar el ratón */
+        background-color: #602935;
         border-color: #602935;
     }
 
@@ -78,8 +77,8 @@
 
     .btn {
         display: inline-block;
-        background-color: #602935; /* Granate */
-        color: #ffffff; /* Blanco */
+        background-color: #602935;
+        color: #ffffff;
         padding: 10px 20px;
         text-decoration: none;
         border: none;
@@ -90,7 +89,7 @@
     }
 
     .btn:hover {
-        background-color: #4b1e29; /* Tonos más oscuros */
+        background-color: #4b1e29;
     }
 
     .pagination {
@@ -131,12 +130,13 @@
           </div>
 
           <!-- Button to generate PDF report -->
-          <a href="" class="btn">Generar Reporte PDF</a>
+          <a href="{% url 'descargar_reporte_pdf' %}" class="btn">Generar Reporte PDF</a>
 
           <!-- Table displaying records -->
           <table class="table table-striped">
               <thead>
                   <tr>
+                      <th>ID</th>
                       <th>Fecha</th>
                       <th>Hora de Entrada</th>
                       <th>Hora de Salida</th>
@@ -144,11 +144,12 @@
                   </tr>
               </thead>
               <tbody>
-                  {% for row in data %}
+                  {% for row in page_obj.object_list %}
                   <tr>
+                      <td>{{ row.id }}</td>
                       <td>{{ row.fecha }}</td>
                       <td>{{ row.hora_entrada }}</td>
-                      <td>{{ row.hora_salida|default:"-" }}</td>
+                      <td>{{ row.hora_salida }}</td>
                       <td>{{ row.horas_trabajadas|floatformat:2 }}</td>
                   </tr>
                   {% empty %}
@@ -161,13 +162,13 @@
 
           <!-- Pagination for additional records -->
           <div class="pagination">
-            {% if has_previous %}
+            {% if page_obj.has_previous %}
             <a href="?page={{ page_obj.previous_page_number }}">Anterior</a>
             {% endif %}
             {% for num in page_obj.paginator.page_range %}
             <a href="?page={{ num }}">{{ num }}</a>
             {% endfor %}
-            {% if has_next %}
+            {% if page_obj.has_next %}
             <a href="?page={{ page_obj.next_page_number }}">Siguiente</a>
             {% endif %}
           </div>
@@ -193,8 +194,6 @@
       });
     });
   </script>
-  <!--BACKSTRETCH-->
-  <!-- You can use an image of whatever size. This script will stretch to fit in any screen size.-->
   <script type="text/javascript" src="{% static 'js/jquery.backstretch.min.js' %}"></script>
   <script>
     $.backstretch("{% static 'img/2.jpg' %}", {speed: 500});

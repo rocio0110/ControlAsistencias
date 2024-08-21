@@ -1,0 +1,84 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Reporte de Horas</title>
+  <style>
+    body {
+        font-family: Arial, sans-serif;
+    }
+    .container {
+        width: 100%;
+        margin: 0 auto;
+        padding: 20px;
+        text-align: center;
+    }
+    h2 {
+        color: #602935;
+        font-weight: bold;
+        margin-bottom: 20px;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+    }
+    table, th, td {
+        border: 1px solid #ACADAD;
+    }
+    th, td {
+        padding: 8px;
+        text-align: center;
+    }
+    th {
+        background-color: #602935;
+        color: #ffffff;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Reporte de Horas</h2>
+    <p>Fecha de generación del reporte: {{ now|date:"d/m/Y H:i" }}</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Hora de Entrada</th>
+          <th>Hora de Salida</th>
+          <th>Horas Trabajadas</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for asistencia in page_obj.object_list %}
+        <tr>
+          <td>{{ asistencia.fecha }}</td>
+          <td>{{ asistencia.hora_entrada }}</td>
+          <td>{{ asistencia.hora_salida }}</td>
+          <td>{{ asistencia.horas_trabajadas|floatformat:2 }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="4">No hay registros de asistencia disponibles.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <!-- Paginación -->
+    <div class="pagination">
+      {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+      {% endif %}
+      {% for num in page_obj.paginator.page_range %}
+      <a href="?page={{ num }}">{{ num }}</a>
+      {% endfor %}
+      {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}">Siguiente</a>
+      {% endif %}
+    </div>
+  </div>
+</body>
+</html>

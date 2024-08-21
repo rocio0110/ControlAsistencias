@@ -1,0 +1,136 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="">
+  <meta name="author" content="Dashboard">
+  <meta name="keyword" content="Dashboard, Bootstrap, Admin, Template, Theme, Responsive, Fluid, Retina">
+
+  <title>Lista Usuarios</title>
+  <link rel="shortcut icon" href="{% static 'img/LOGO.JPG' %}" type="image/x-icon">
+
+  <!-- Bootstrap core CSS -->
+  <link href="{% static 'css/bootstrap.css' %}" rel="stylesheet">
+  <!-- External CSS -->
+  <link href="{% static 'font-awesome/css/font-awesome.css' %}" rel="stylesheet" />
+  <link rel="stylesheet" type="text/css" href="{% static 'css/zabuto_calendar.css' %}">
+  <link rel="stylesheet" type="text/css" href="{% static 'js/gritter/css/jquery.gritter.css' %}" />
+  <link rel="stylesheet" type="text/css" href="{% static 'lineicons/style.css' %}">    
+
+  <!-- Custom styles for this template -->
+  <link href="{% static 'css/style.css' %}" rel="stylesheet">
+  <link href="{% static 'css/style-responsive.css' %}" rel="stylesheet">
+
+  <script src="{% static 'js/chart-master/Chart.js' %}"></script>
+
+  <style>
+    /* Estilos adicionales */
+    .container {
+        background-color: #ffffff; /* Fondo blanco */
+        border: 1px solid #ACADAD; /* Borde gris */
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        margin: 0 auto; /* Centrar el contenedor */
+        max-width: 800px; /* Ancho máximo del contenedor */
+        position: relative;
+        top: 70%; /* Centrando verticalmente con margen superior */
+        transform: translateY(70%); /* Ajustar el margen para centrar */
+    }
+    
+    h2 {
+        color: #602935; /* Color del título */
+        font-weight: bold;
+        text-align: center; /* Centrar el título */
+    }
+    
+    table {
+        width: 100%; /* Ancho completo del contenedor */
+        border-collapse: collapse; /* Colapsar bordes */
+        margin-top: 20px; /* Espacio superior para separar del título */
+    }
+    
+    th, td {
+        border: 1px solid #ACADAD; /* Borde de celdas */
+        padding: 10px; /* Espacio interno de las celdas */
+        text-align: center; /* Centrar texto en celdas */
+    }
+    
+    th {
+        background-color: #f2f2f2; /* Fondo de encabezados */
+        color: #602935; /* Color del texto en encabezados */
+    }
+    
+    tbody tr:nth-child(even) {
+        background-color: #f9f9f9; /* Fondo alternado de filas */
+    }
+  </style>
+
+</head>
+
+<body>
+  <section id="container">
+
+    {% include 'general/menu.html' %}
+
+    <div class="container">
+      <h2>Usuarios Inactivos</h2>
+      <table>
+        <thead>
+            <tr>
+              
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Apellido Paterno</th>
+                <th>Apellido Materno</th>
+                <th>Correo Electrónico</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for usuario in usuarios %}
+            <tr>
+                <td>{{ usuario.user_id }}</td>              
+                <td>{{ usuario.nombre }}</td>
+                <td>{{ usuario.apellido_paterno }}</td>
+                <td>{{ usuario.apellido_materno }}</td>
+                <td>{{ usuario.correo_electronico }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4">No hay usuarios inactivos.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+
+  </section>
+  <!-- Scripts -->
+ <script src="{% static 'js/jquery.js' %}"></script>
+ <script src="{% static 'js/bootstrap.min.js' %}"></script>
+ <script class="include" type="text/javascript" src="{% static 'js/jquery.dcjqaccordion.2.7.js' %}"></script>
+ <script src="{% static 'js/jquery.scrollTo.min.js' %}"></script>
+ <script src="{% static 'js/jquery.nicescroll.js' %}" type="text/javascript"></script>
+ <script src="{% static 'js/common-scripts.js' %}"></script>
+ <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script> <!-- Include jQuery UI for the datepicker -->
+ <script>
+   $(function() {
+     $("#filter-date").datepicker({
+       dateFormat: 'yy-mm-dd',
+       changeMonth: true,
+       changeYear: true,
+       showButtonPanel: true
+     });
+   });
+ </script>
+ <!--BACKSTRETCH-->
+ <!-- You can use an image of whatever size. This script will stretch to fit in any screen size.-->
+ <script type="text/javascript" src="{% static 'js/jquery.backstretch.min.js' %}"></script>
+ <script>
+   $.backstretch("{% static 'img/2.jpg' %}", {speed: 500});
+ </script>
+</body>
+</html>
