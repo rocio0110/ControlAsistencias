@@ -76,10 +76,7 @@ class ActiveUserBackend(ModelBackend):
             self.horas_realizadas = 0
         self.save()
 
-        
-
-
-
+    
 
 
 class QR(models.Model):
@@ -89,8 +86,7 @@ class QR(models.Model):
 
     def __str__(self):
         return f"QR para {self.usuario} generado en {self.qr_entrada_fecha}"
-
-
+    
 
 class Asistencia(models.Model):
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
@@ -101,7 +97,7 @@ class Asistencia(models.Model):
     def calcular_horas(self):
         if self.fecha_escaneo_entrada and self.fecha_escaneo_salida:
             diferencia = self.fecha_escaneo_salida - self.fecha_escaneo_entrada
-            self.horas = timedelta(hours=diferencia.seconds // 3600, minutes=(diferencia.seconds % 3600) // 60)
+            self.horas = timedelta(seconds=diferencia.total_seconds())
             self.save()
         else:
             self.horas = None

@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Detalle de Reporte</title>
+</head>
+<body>
+    <h1>Detalle de Reporte</h1>
+    <p>Usuario: {{ reporte.usuario.nombre_usuario }}</p>
+    <p>Fecha de Generación: {{ reporte.fecha_generacion }}</p>
+    <p>Horas Completadas en el Periodo: {{ reporte.horas_completadas_periodo }}</p>
+    <p>Horas Faltantes: {{ reporte.horas_faltantes }}</p>
+    <p>Fecha de Inicio: {{ reporte.fecha_inicio }}</p>
+    <p>Fecha de Fin: {{ reporte.fecha_fin }}</p>
+    <a href="{% url 'reporte_update' reporte.pk %}">Editar</a>
+    <form action="{% url 'reporte_delete' reporte.pk %}" method="post">
+        {% csrf_token %}
+        <button type="submit">Eliminar</button>
+    </form>
+    <a href="{% url 'reporte_list' %}">Volver a la lista</a>
+</body>
+</html>

@@ -128,8 +128,9 @@
         <div class="container">
           <center><img class="img-circle" src="{% static 'img/LOGO.jpg' %}" width="100px" height="100px" align=""></center>
           <h2>Bienvenido, {{ user.username }}</h2>
-          <a href="{% url 'generar_qr' %}" class="btn">Generar Código QR de Entrada</a>
-          <a href="{% url 'generar_qr' %}" class="btn">Generar Código QR de salida </a>
+          <a href="{% url 'generar_qr' 'entrada' %}" class="btn">Generar Código QR de Entrada</a>
+          <a href="{% url 'generar_qr' 'salida' %}" class="btn">Generar Código QR de Salida</a>
+          
           <a href="" class="btn">Revisar registro</a>
 
         </div>

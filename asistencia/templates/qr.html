@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Código QR</title>
-    <link rel="shortcut icon" href="{% static 'img/LOGO.JPG' %}" type="image/x-icon">
+    <link rel="shortcut icon" href="{% static 'img/LOGO.jpg' %}" type="image/x-icon">
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     <style>
         body {
@@ -63,13 +63,12 @@
             <center><img class="img-circle" src="{% static 'img/LOGO.jpg' %}" width="100px" height="100px" align=""></center>
             <h1>QR de Entrada</h1>
             {% if messages %}
-            {% for message in messages %}
-              <div class="alert alert-{{ message.tags }}">{{ message }}</div>
-            {% endfor %}
-          {% endif %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
             {% if qr_code_entrada_base64 %}
                 <img src="data:image/png;base64,{{ qr_code_entrada_base64 }}" alt="QR Entrada">
-                <!-- Enlace para escanear el QR de entrada -->
                 <a href="{% url 'procesar_qr' qr_data_entrada %}" class="btn">Escanear QR de Entrada</a>
             {% else %}
                 <p>No se ha generado un código QR de entrada para hoy.</p>
@@ -78,7 +77,6 @@
             {% if qr_code_salida_base64 %}
                 <h1>QR de Salida</h1>
                 <img src="data:image/png;base64,{{ qr_code_salida_base64 }}" alt="QR Salida">
-                <!-- Enlace para escanear el QR de salida -->
                 <a href="{% url 'procesar_qr' qr_data_salida %}" class="btn">Escanear QR de Salida</a>
             {% else %}
                 <p>No se ha generado un código QR de salida para hoy.</p>
@@ -90,14 +88,12 @@
             </div>
         </div>
     </div>
-    
 
     <!-- JavaScript al final del documento para cargar las páginas más rápido -->
     <script src="{% static 'js/jquery.js' %}"></script>
     <script src="{% static 'js/bootstrap.min.js' %}"></script>
 
     <!--BACKSTRETCH-->
-    <!-- You can use an image of whatever size. This script will stretch to fit in any screen size.-->
     <script type="text/javascript" src="{% static 'js/jquery.backstretch.min.js' %}"></script>
     <script>
         $.backstretch("{% static 'img/2.jpg' %}", {speed: 500});

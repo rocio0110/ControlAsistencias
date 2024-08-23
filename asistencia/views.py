@@ -31,22 +31,68 @@ from django.http import JsonResponse
 def scan_qr_view(request):
     return render(request, 'scan_qr/scan_qr.html')
 
+from django.http import JsonResponse
+from django.utils import timezone
+from datetime import timedelta
+from .models import Usuario, Asistencia
+import json
+
 def registrar_asistencia(request):
     if request.method == 'POST':
-        qr_data = request.POST.get('qr_data')
-        
         try:
-            # Supongamos que en tu QR tienes el nombre de usuario
-            Usuario = Usuario.objects.get(username=qr_data)
-            # Aquí puedes agregar la lógica para registrar la asistencia
-            # Ejemplo:
-            # Asistencia.objects.create(usuario=usuario, fecha=timezone.now())
+            # Obtener los datos del QR desde la solicitud
+            data = json.loads(request.body)
+            qr_data = data.get('qr_data')
+
+            # Procesar el texto del QR
+            lines = qr_data.splitlines()
+            folio = int(lines[0].split()[-1])  # Extraer el folio del prestador
+            tipo = lines[1]                     # Extraer el tipo de QR (Entrada o Salida)
+
+            # Buscar al usuario por su ID
+            usuario = Usuario.objects.get(id=folio)
             
-            return JsonResponse({'status': 'success', 'message': 'Asistencia registrada con éxito'})
+            # Obtener o crear la asistencia para el día actual
+            asistencia, created = Asistencia.objects.get_or_create(
+                usuario=usuario, 
+                fecha_escaneo_entrada__date=timezone.now().date()
+            )
+            
+            if tipo == 'Entrada':
+                if not asistencia.fecha_escaneo_entrada:
+                    # Registrar la hora de entrada
+                    asistencia.fecha_escaneo_entrada = timezone.now()
+                    mensaje = "Entrada registrada con éxito."
+                else:
+                    return JsonResponse({'status': 'error', 'message': 'Ya se ha registrado una entrada para hoy.'})
+            
+            elif tipo == 'Salida':
+                if asistencia.fecha_escaneo_entrada and not asistencia.fecha_escaneo_salida:
+                    # Registrar la hora de salida
+                    asistencia.fecha_escaneo_salida = timezone.now()
+                    # Calcular las horas trabajadas
+                    asistencia.calcular_horas()  # Asegúrate de que esta función calcula la diferencia entre entrada y salida.
+                    mensaje = "Salida registrada con éxito."
+                else:
+                    return JsonResponse({'status': 'error', 'message': 'No se puede registrar salida sin una entrada previa o ya se ha registrado una salida.'})
+            
+            else:
+                return JsonResponse({'status': 'error', 'message': 'Tipo de QR no válido.'})
+
+            # Guardar la asistencia
+            asistencia.save()
+
+            return JsonResponse({'status': 'success', 'message': mensaje})
+        
         except Usuario.DoesNotExist:
             return JsonResponse({'status': 'error', 'message': 'Usuario no encontrado'})
+        
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
 
     return JsonResponse({'status': 'error', 'message': 'Método no permitido'})
+
+
 
     
 class BasicTable(LoginRequiredMixin, View):
@@ -144,38 +190,88 @@ def admin_login_view(request):
 @user_passes_test(lambda u: u.is_superuser)  # Verificar si el usuario es un superusuario
 def admin_dashboard_view(request):
     return render(request, 'admin_dashboard.html')
+
+
 from django.urls import reverse
 
-def generar_qr(request):
-    user = request.user  # Obtén el usuario autenticado
+import qrcode
+from io import BytesIO
+from django.http import HttpResponse
+from django.utils import timezone
+from datetime import timedelta
+from .models import Usuario, Asistencia
 
-    # Supongo que tienes un modelo llamado Usuario que está relacionado con User
-    usuario = Usuario.objects.get(nombre=user.username)  # Filtra por el campo username
 
-    # Datos a codificar en el QR
-    qr_data = f"Usuario: {user.username}\nEmail: {user.email}\nNombre: {usuario.nombre} {usuario.apellido_paterno}"
-    
-    # Generar el QR
-    qr = qrcode.QRCode(
-        version=1,
-        error_correction=qrcode.constants.ERROR_CORRECT_L,
-        box_size=10,
-        border=4,
-    )
-    qr.add_data(qr_data)
-    qr.make(fit=True)
-    img = qr.make_image(fill_color="black", back_color="white")
-    
-    # Convertir la imagen a PNG en memoria
-    buffer = BytesIO()
-    img.save(buffer, format="PNG")
-    buffer.seek(0)
-    
-    # Preparar la respuesta de descarga
-    response = HttpResponse(buffer, content_type='image/png')
-    response['Content-Disposition'] = f'attachment; filename=QR_{usuario.nombre}.png'
-    
-    return response  # Devuelve el QR como archivo descargable
+def generar_qr(request, tipo_qr):
+    user = request.user
+    usuario = Usuario.objects.get(user=user)
+    hoy = timezone.now().date()
+
+    if tipo_qr == 'entrada':
+        qr_existente = QR.objects.filter(usuario=usuario, qr_entrada_fecha__date=hoy).exists()
+        if qr_existente:
+            return render(request, 'error.html', {'mensaje': 'Ya has generado un QR de entrada para hoy.'})
+
+        hora_actual = timezone.now()
+        qr_data = f"Folio prestador {usuario.id}\nEntrada\nGenerado: {hora_actual.strftime('%H:%M:%S')}"
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(qr_data)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+
+        buffer = BytesIO()
+        img.save(buffer, format="PNG")
+        buffer.seek(0)
+
+        # Crea el registro de QR
+        qr_obj = QR.objects.create(usuario=usuario, qr_entrada_fecha=hora_actual)
+
+        response = HttpResponse(buffer, content_type='image/png')
+        response['Content-Disposition'] = f'attachment; filename=QR_Entrada_{usuario.nombre}_{hoy}.png'
+        return response
+
+    elif tipo_qr == 'salida':
+        qr_existente = QR.objects.filter(usuario=usuario, qr_salida_fecha__date=hoy).exists()
+        if qr_existente:
+            return render(request, 'error.html', {'mensaje': 'Ya has generado un QR de salida para hoy.'})
+
+        asistencia = Asistencia.objects.filter(usuario=usuario, fecha_escaneo_entrada__date=hoy).first()
+
+        if not asistencia:
+            return render(request, 'error.html', {'mensaje': 'No has registrado una entrada hoy.'})
+
+        hora_actual = timezone.now()
+        qr_data = f"Folio prestador {usuario.id}\nSalida\nHora de escaneo: {hora_actual.strftime('%H:%M:%S')}\nHoras trabajadas: {asistencia.horas_trabajadas:.2f}\nNos vemos mañana, {usuario.nombre}. ¡Gracias por tu trabajo!"
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(qr_data)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+
+        buffer = BytesIO()
+        img.save(buffer, format="PNG")
+        buffer.seek(0)
+
+        qr_obj = QR.objects.filter(usuario=usuario).latest('qr_entrada_fecha')
+        qr_obj.qr_salida_fecha = hora_actual
+        qr_obj.save()
+
+        response = HttpResponse(buffer, content_type='image/png')
+        response['Content-Disposition'] = f'attachment; filename=QR_Salida_{usuario.nombre}_{hoy}.png'
+        return response
+
+    return render(request, 'error.html', {'mensaje': 'Tipo de QR no válido.'})
+
+
 
 
 from django.shortcuts import render, redirect, get_object_or_404
@@ -183,38 +279,45 @@ from django.utils import timezone
 from .models import QR, Asistencia, Usuario
 
 @login_required
-def procesar_qr(request, qr_id):
-    qr = get_object_or_404(QR, id=qr_id)
-    usuario = qr.usuario
-
+def procesar_qr(request, tipo_qr):
+    user = request.user
+    usuario = Usuario.objects.get(user=user)
     hoy = timezone.now().date()
-    asistencia = Asistencia.objects.filter(usuario=usuario, fecha_escaneo_entrada__date=hoy).first()
 
-    if not asistencia:
-        asistencia = Asistencia.objects.create(
-            usuario=usuario,
-            fecha_escaneo_entrada=timezone.now(),
-        )
+    if tipo_qr == 'entrada':
+        # Verifica si ya existe un registro de entrada para hoy
+        asistencia = Asistencia.objects.filter(usuario=usuario, fecha_escaneo_entrada__date=hoy).first()
+        if asistencia:
+            return render(request, 'error.html', {'mensaje': 'Ya registraste tu entrada hoy.'})
         
-        # Calcula la hora de salida aproximada (asumiendo una jornada de 4 horas)
-        hora_salida_aproximada = asistencia.fecha_escaneo_entrada + timedelta(hours=4)
+        # Registra la hora de entrada
+        asistencia = Asistencia.objects.create(usuario=usuario, fecha_escaneo_entrada=timezone.now())
         
-        context = {
-            'asistencia': asistencia,
-            'hora_salida_aproximada': hora_salida_aproximada,
-        }
-        return render(request, 'entrada_exitosa.html', context)
-    
-    elif not asistencia.fecha_escaneo_salida:
+        mensaje = f"Felicidades {usuario.nombre}, tu entrada ha sido registrada."
+        return render(request, 'entrada_exitosa.html', {'mensaje': mensaje, 'hora_entrada': asistencia.hora_entrada})
+
+    elif tipo_qr == 'salida':
+        # Verifica si ya existe un registro de entrada para hoy
+        asistencia = Asistencia.objects.filter(usuario=usuario, fecha_escaneo_entrada__date=hoy).first()
+        if not asistencia:
+            return render(request, 'error.html', {'mensaje': 'No has registrado tu entrada o ya registraste tu salida.'})
+        
+        if asistencia.fecha_escaneo_salida:
+            return render(request, 'error.html', {'mensaje': 'Ya registraste tu salida hoy.'})
+        
+        # Registra la hora de salida y calcula las horas trabajadas
         asistencia.fecha_escaneo_salida = timezone.now()
-        asistencia.horas = asistencia.fecha_escaneo_salida - asistencia.fecha_escaneo_entrada
+        asistencia.calcular_horas()
         asistencia.save()
-        return redirect('salida_exitosa')
+
+        # Actualiza las horas realizadas en el modelo Usuario
+        usuario.actualizar_horas_realizadas()
+
+        mensaje = f"Nos vemos mañana, {usuario.nombre}. ¡Gracias por tu trabajo!"
+        return render(request, 'salida_exitosa.html', {'mensaje': mensaje, 'hora_salida': asistencia.hora_salida, 'horas_trabajadas': asistencia.horas_trabajadas})
 
     else:
-        messages.error(request, 'Ya has registrado tu entrada y salida para el día de hoy.')
-        return redirect('error_view')
-
+        return render(request, 'error.html', {'mensaje': 'Tipo de QR no válido.'})
 
 
 
