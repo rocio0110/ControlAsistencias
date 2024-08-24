@@ -29,5 +29,7 @@ urlpatterns = [
     path('descargar_reporte_pdf/', descargar_reporte_pdf, name='descargar_reporte_pdf'),
     path('escanear-qr/', scan_qr_view, name='scan_qr'),
     path('registrar-asistencia/', registrar_asistencia, name='registrar_asistencia'),
+    path('reportes_admin/', reportes_admin_view, name='reportes_admin'),
+    path('reportes_admin/pdf/', reporte_admin_pdf, name='reporte_admin_pdf'),
     
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

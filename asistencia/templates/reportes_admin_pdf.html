@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Administración</title>
+    <style>
+        /* Estilos básicos para el PDF */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            width: 100%;
+            padding: 20px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+        }
+        h1 {
+            color: #333;
+        }
+        .card {
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            background-color: #e2e2e2;
+            border: 1px solid #ddd;
+        }
+        .card h2 {
+            margin-top: 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+        .filter-form {
+            margin-bottom: 20px;
+        }
+        .filter-form label {
+            margin-right: 10px;
+        }
+        .filter-form select, .filter-form input[type="date"] {
+            margin-right: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Reportes de Administración</h1>
+
+        <div class="card">
+            <h2>Reporte de Usuarios</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Correo Electrónico</th>
+                        <th>Tipo de Servicio</th>
+                        <th>Horas Realizadas</th>
+                        <th>Horas Requeridas</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for usuario in usuarios %}
+                        <tr>
+                            <td>{{ usuario.nombre }} {{ usuario.apellido_paterno }} {{ usuario.apellido_materno }}</td>
+                            <td>{{ usuario.correo_electronico }}</td>
+                            <td>{{ usuario.get_tipo_servicio_display }}</td>
+                            <td>{{ usuario.horas_realizadas }}</td>
+                            <td>{{ usuario.horas_requeridas }}</td>
+                            <td>{{ usuario.activo|yesno:"Activo,Inactivo" }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="6">No hay usuarios disponibles.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2>Reporte de Asistencias</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Usuario</th>
+                        <th>Fecha</th>
+                        <th>Hora de Entrada</th>
+                        <th>Hora de Salida</th>
+                        <th>Horas Trabajadas</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for asistencia in asistencias %}
+                        <tr>
+                            <td>{{ asistencia.usuario.nombre }} {{ asistencia.usuario.apellido_paterno }} {{ asistencia.usuario.apellido_materno }}</td>
+                            <td>{{ asistencia.fecha }}</td>
+                            <td>{{ asistencia.hora_entrada }}</td>
+                            <td>{{ asistencia.hora_salida }}</td>
+                            <td>{{ asistencia.horas_trabajadas }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5">No hay asistencias registradas.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2>Reporte de QR Generados</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Usuario</th>
+                        <th>Fecha de Entrada</th>
+                        <th>Fecha de Salida</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for qr in qrs %}
+                        <tr>
+                            <td>{{ qr.usuario.nombre }} {{ qr.usuario.apellido_paterno }} {{ qr.usuario.apellido_materno }}</td>
+                            <td>{{ qr.qr_entrada_fecha }}</td>
+                            <td>{{ qr.qr_salida_fecha }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="3">No hay QR generados.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

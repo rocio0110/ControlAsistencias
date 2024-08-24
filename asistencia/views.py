@@ -186,10 +186,6 @@ def admin_login_view(request):
         form = AuthenticationForm()
     return render(request, 'admin_dashboard.html', {'form': form})
 
-@login_required
-@user_passes_test(lambda u: u.is_superuser)  # Verificar si el usuario es un superusuario
-def admin_dashboard_view(request):
-    return render(request, 'admin_dashboard.html')
 
 
 from django.urls import reverse
@@ -201,18 +197,17 @@ from django.utils import timezone
 from datetime import timedelta
 from .models import Usuario, Asistencia
 
-
 def generar_qr(request, tipo_qr):
     user = request.user
     usuario = Usuario.objects.get(user=user)
-    hoy = timezone.now().date()
+    hoy = timezone.localtime(timezone.now()).date()
 
     if tipo_qr == 'entrada':
         qr_existente = QR.objects.filter(usuario=usuario, qr_entrada_fecha__date=hoy).exists()
         if qr_existente:
             return render(request, 'error.html', {'mensaje': 'Ya has generado un QR de entrada para hoy.'})
 
-        hora_actual = timezone.now()
+        hora_actual = timezone.localtime(timezone.now())  # Asegura que use la hora local
         qr_data = f"Folio prestador {usuario.id}\nEntrada\nGenerado: {hora_actual.strftime('%H:%M:%S')}"
         qr = qrcode.QRCode(
             version=1,
@@ -228,7 +223,6 @@ def generar_qr(request, tipo_qr):
         img.save(buffer, format="PNG")
         buffer.seek(0)
 
-        # Crea el registro de QR
         qr_obj = QR.objects.create(usuario=usuario, qr_entrada_fecha=hora_actual)
 
         response = HttpResponse(buffer, content_type='image/png')
@@ -245,7 +239,7 @@ def generar_qr(request, tipo_qr):
         if not asistencia:
             return render(request, 'error.html', {'mensaje': 'No has registrado una entrada hoy.'})
 
-        hora_actual = timezone.now()
+        hora_actual = timezone.localtime(timezone.now())  # Asegura que use la hora local
         qr_data = f"Folio prestador {usuario.id}\nSalida\nHora de escaneo: {hora_actual.strftime('%H:%M:%S')}\nHoras trabajadas: {asistencia.horas_trabajadas:.2f}\nNos vemos mañana, {usuario.nombre}. ¡Gracias por tu trabajo!"
         qr = qrcode.QRCode(
             version=1,
@@ -270,8 +264,6 @@ def generar_qr(request, tipo_qr):
         return response
 
     return render(request, 'error.html', {'mensaje': 'Tipo de QR no válido.'})
-
-
 
 
 from django.shortcuts import render, redirect, get_object_or_404
@@ -451,6 +443,26 @@ def inicio_prestador(request):
     return render(request, 'prestador/inicio.html')
 
 
+@login_required
+def marcar_usuario_inactivo(request, usuario_id):
+    usuario = Usuario.objects.get(id=usuario_id)
+    usuario.activo = False
+    usuario.save()
+    return redirect('lista_usuarios')
+
+
+@login_required
+def lista_usuarios_inactivos(request):
+    usuarios_inactivos = Usuario.objects.filter(activo=False)
+    query = request.GET.get('q')
+    
+    if query:
+        usuarios_inactivos = usuarios_inactivos.filter(nombre__icontains=query)
+    
+    return render(request, 'usuarios_inactivos.html', {'usuarios': usuarios_inactivos, 'query': query})
+
+
+from datetime import datetime
 from django.shortcuts import render
 from .models import Asistencia
 from django.core.paginator import Paginator
@@ -476,34 +488,58 @@ def reportes_horas(request):
 
     return render(request, 'prestador/reportes.html', context)
 
+from django.shortcuts import render
+from django.db.models import Sum, Count
+from .models import Usuario, Asistencia
+
 def dashboard_prestador(request):
-    return render(request, 'prestador/dashboard_prestador.html')
+    # Obtener el usuario actual
+    usuario = request.user.usuario
+
+    # Datos de horas trabajadas
+    total_horas_trabajadas = Asistencia.objects.filter(usuario=usuario).aggregate(Sum('horas'))['horas__sum'] or 0
+    horas_restantes = usuario.horas_requeridas - usuario.horas_realizadas
+
+    # Número de asistencias registradas
+    total_asistencias = Asistencia.objects.filter(usuario=usuario).count()
+
+    # Asistencias recientes (últimos 5 registros)
+    asistencias_recientes = Asistencia.objects.filter(usuario=usuario).order_by('-fecha_escaneo_entrada')[:5]
+
+    # Datos para el gráfico de asistencias por día
+    asistencias_por_dia = (
+        Asistencia.objects.filter(usuario=usuario)
+        .extra({'fecha': "DATE(fecha_escaneo_entrada)"})
+        .values('fecha')
+        .annotate(total=Count('id'))
+        .order_by('fecha')
+    )
+
+    context = {
+        'usuario': usuario,
+        'total_horas_trabajadas': total_horas_trabajadas,
+        'horas_restantes': horas_restantes,
+        'total_asistencias': total_asistencias,
+        'asistencias_recientes': asistencias_recientes,
+        'asistencias_por_dia': asistencias_por_dia,
+    }
+
+    return render(request, 'prestador/dashboard_prestador.html', context)
+
 
 
 @login_required
-def marcar_usuario_inactivo(request, usuario_id):
-    usuario = Usuario.objects.get(id=usuario_id)
-    usuario.activo = False
-    usuario.save()
-    return redirect('lista_usuarios')
-
-
-@login_required
-def lista_usuarios_inactivos(request):
-    usuarios_inactivos = Usuario.objects.filter(activo=False)
-    query = request.GET.get('q')
-    
-    if query:
-        usuarios_inactivos = usuarios_inactivos.filter(nombre__icontains=query)
-    
-    return render(request, 'usuarios_inactivos.html', {'usuarios': usuarios_inactivos, 'query': query})
-
-
-from datetime import datetime
-
 def descargar_reporte_pdf(request):
-    # Obtener los datos de Asistencia (puedes filtrar según lo necesites)
-    asistencias = Asistencia.objects.all().order_by('fecha_escaneo_entrada')
+    # Obtener el usuario autenticado
+    usuario_auth = request.user
+    # Obtener el objeto Usuario relacionado con el usuario autenticado
+    usuario = Usuario.objects.get(user=usuario_auth)
+    
+    # Construir el nombre completo del usuario
+    usuario_nombre_completo = f"{usuario.nombre}_{usuario.apellido_paterno}_{usuario.apellido_materno}".replace(" ", "_")
+
+    # Obtener las asistencias del usuario autenticado
+    asistencias = Asistencia.objects.filter(usuario=usuario).order_by('fecha_escaneo_entrada')
     
     # Cargar el template HTML y renderizarlo con los datos
     template = get_template('prestador/reporte_pdf.html')
@@ -514,7 +550,9 @@ def descargar_reporte_pdf(request):
 
     # Crear una respuesta HTTP con el tipo de contenido para PDF
     response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = 'attachment; filename="reporte_horas.pdf"'
+    
+    # Personalizar el nombre del archivo PDF
+    response['Content-Disposition'] = f'attachment; filename="reporte_horas_{usuario_nombre_completo}.pdf"'
 
     # Convertir HTML a PDF usando xhtml2pdf
     pisa_status = pisa.CreatePDF(
@@ -530,3 +568,112 @@ def descargar_reporte_pdf(request):
     return response
 
 
+# views.py
+from django.shortcuts import render
+from .models import Usuario, QR, Asistencia
+from django.db.models import Sum, Count
+from django.db import models
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)  # Verificar si el usuario es un superusuario
+def admin_dashboard_view(request):
+
+    # Datos del dashboard
+    total_usuarios = Usuario.objects.count()
+    usuarios_activos = Usuario.objects.filter(activo=True).count()
+    usuarios_inactivos = Usuario.objects.filter(activo=False).count()
+
+    # Estadísticas de asistencia
+    hoy = timezone.now().date()
+    asistencias_hoy = Asistencia.objects.filter(fecha_escaneo_entrada__date=hoy)
+    total_horas_hoy = asistencias_hoy.aggregate(total_horas=models.Sum('horas'))['total_horas'] or timedelta()
+    
+    # Datos de los QR generados
+    qrs_totales = QR.objects.count()
+    qrs_entrada = QR.objects.filter(qr_salida_fecha__isnull=True).count()
+    qrs_salida = QR.objects.filter(qr_salida_fecha__isnull=False).count()
+
+    # Datos adicionales
+    usuarios = Usuario.objects.all()[:5]  # Primeros 5 usuarios
+    asistencias = Asistencia.objects.all()[:5]  # Primeras 5 asistencias
+
+    context = {
+        'total_usuarios': total_usuarios,
+        'usuarios_activos': usuarios_activos,
+        'usuarios_inactivos': usuarios_inactivos,
+        'total_horas_hoy': total_horas_hoy.total_seconds() / 3600,
+        'qrs_totales': qrs_totales,
+        'qrs_entrada': qrs_entrada,
+        'qrs_salida': qrs_salida,
+        'usuarios': usuarios,
+        'asistencias': asistencias,
+    }
+    return render(request, 'admin_dashboard.html', context)
+
+from django.shortcuts import render
+from django.db.models import Sum
+from .models import Usuario, Asistencia, QR
+from django.utils.dateparse import parse_date
+
+def reportes_admin_view(request):
+    # Obtener los parámetros de filtro de la solicitud GET
+    usuario_id = request.GET.get('usuario')
+    fecha = request.GET.get('fecha')
+
+    # Filtrar usuarios
+    usuarios = Usuario.objects.all()
+    if usuario_id:
+        usuarios = usuarios.filter(id=usuario_id)
+    
+    # Filtrar asistencias
+    asistencias = Asistencia.objects.all()
+    if fecha:
+        fecha = parse_date(fecha)
+        asistencias = asistencias.filter(fecha_escaneo_entrada__date=fecha)
+    
+    # Filtrar QR generados
+    qrs = QR.objects.all()
+    if fecha:
+        qrs = qrs.filter(qr_entrada_fecha__date=fecha)
+
+    context = {
+        'usuarios': usuarios,
+        'asistencias': asistencias,
+        'qrs': qrs,
+    }
+
+    return render(request, 'reportes_admin.html', context)
+
+
+
+from django.shortcuts import render
+from django.http import HttpResponse
+from django.template.loader import render_to_string
+from xhtml2pdf import pisa
+from io import BytesIO
+
+def reporte_admin_pdf(request):
+    # Obtén los datos que necesitas para el reporte
+    usuarios = Usuario.objects.all()  # Ajusta esta consulta según tus necesidades
+    asistencias = Asistencia.objects.all()  # Ajusta esta consulta según tus necesidades
+    qrs = QR.objects.all()  # Ajusta esta consulta según tus necesidades
+
+    # Renderiza la plantilla como un string
+    html_string = render_to_string('reportes_admin_pdf.html', {
+        'usuarios': usuarios,
+        'asistencias': asistencias,
+        'qrs': qrs,
+    })
+
+    # Crea un archivo PDF a partir del HTML
+    result = BytesIO()
+    pdf = pisa.CreatePDF(BytesIO(html_string.encode("UTF-8")), dest=result)
+
+    # Verifica si se ha producido algún error
+    if pdf.err:
+        return HttpResponse('Error al generar el PDF', status=500)
+
+    # Retorna el PDF como una respuesta HTTP
+    response = HttpResponse(result.getvalue(), content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="reporte_admin.pdf"'
+    return response

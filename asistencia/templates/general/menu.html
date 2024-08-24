@@ -28,7 +28,7 @@
     <!-- sidebar menu start -->
     <ul class="sidebar-menu" id="nav-accordion">
       <p class="centered">
-        <a href="profile.html"><img src="{% static '/img/LOGO.jpg' %}" class="img-circle" width="60" /></a>
+        <a href="{% url 'admin_dashboard' %}"><img src="{% static '/img/LOGO.jpg' %}" class="img-circle" width="60" /></a>
       </p>
       <h5 class="centered">Administrador</h5>
 
@@ -65,7 +65,7 @@
         </a>
         <ul class="sub">
           <li>
-            <a href="">Generar reportes</a>
+            <a href="{% url 'reportes_admin' %}">Generar reportes</a>
           </li>
         </ul>
       </li>
