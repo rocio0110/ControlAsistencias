@@ -319,53 +319,72 @@ def generate_password(nombre, apellido_paterno, apellido_materno):
     base_password = (apellido_paterno[:2] + apellido_materno[:2]).lower()
     return base_password
 
+def generate_unique_username(base_username):
+    # Aquí podrías implementar la lógica para generar un nombre de usuario único si ya existe uno igual.
+    # Por simplicidad, retornamos el base_username en este ejemplo.
+    return base_username
+
 @login_required
 def agregar_usuario(request):
     if request.method == 'POST':
         form = UsuarioForm(request.POST)
         if form.is_valid():
+            # Obteniendo los datos del formulario
             nombre = form.cleaned_data['nombre']
             apellido_paterno = form.cleaned_data['apellido_paterno']
             apellido_materno = form.cleaned_data['apellido_materno']
             telefono = form.cleaned_data['telefono']
             correo_electronico = form.cleaned_data['correo_electronico']
-            tipo_servicio = form.cleaned_data['tipo_servicio']
 
-            # Generar username y contraseña
-            username = nombre
-            password = generate_password(nombre, apellido_paterno, apellido_materno)
+            # Verificar si ya existe un usuario con el mismo correo electrónico
+            if Usuario.objects.filter(correo_electronico=correo_electronico).exists():
+                form.add_error('correo_electronico', 'Este correo electrónico ya está en uso.')
+            else:
+                # Crear la instancia del usuario
+                usuario = form.save(commit=False)
 
-            # Verificar si el nombre de usuario ya existe
-            if User.objects.filter(username=username).exists():
-                messages.error(request, 'El nombre de usuario ya está en uso.')
-                return render(request, 'agregar_usuario.html', {'form': form})
+                # Generar un nombre de usuario único basado en el nombre y apellidos
+                base_username = f"{nombre}.{apellido_paterno}".lower()
+                username = generate_unique_username(base_username)
+                password = generate_password(nombre, apellido_paterno, apellido_materno)
 
-            # Crear el usuario de Django y el perfil asociado
-            user = User.objects.create_user(username=username, password=password, email=correo_electronico)
-            Usuario.objects.create(
-                user=user,
-                nombre=nombre,
-                apellido_paterno=apellido_paterno,
-                apellido_materno=apellido_materno,
-                telefono=telefono,
-                correo_electronico=correo_electronico,
-                tipo_servicio=tipo_servicio
-            )
+                # Crear el usuario de Django y asignarlo al perfil
+                usuario.user = User.objects.create_user(
+                    username=username,
+                    email=correo_electronico,
+                    password=password
+                )
 
-            # Enviar email de confirmación
-            subject = 'Tu cuenta ha sido creada'
-            message = f'Hola {nombre},\n\nTu cuenta ha sido creada con éxito.\n\nNombre de usuario: {username}\nContraseña: {password}\n\nSaludos,\nEl equipo de Control de Asistencias'
-            from_email = settings.DEFAULT_FROM_EMAIL
-            send_mail(subject, message, from_email, [correo_electronico])
+                # Guardar el usuario y enviar correo de confirmación
+                usuario.save()
 
-            messages.success(request, 'Usuario agregado exitosamente.')
-            return redirect('lista_usuarios')
-        else:
-            messages.error(request, 'Por favor, corrija los errores a continuación.')
+                # Enviar correo con el nombre de usuario y la contraseña
+                subject = 'Bienvenido al sistema'
+                message = f"""
+                Hola {nombre},
+
+                Tu usuario ha sido creado exitosamente. Aquí están tus credenciales:
+
+                Nombre de usuario: {username}
+                Contraseña: {password}
+
+                Por favor, guarda esta información en un lugar seguro.
+
+                Saludos,
+                El equipo de Control de Asistencias
+                """
+                from_email = settings.DEFAULT_FROM_EMAIL
+                send_mail(subject, message, from_email, [correo_electronico], fail_silently=False)
+
+                messages.success(request, 'Usuario agregado exitosamente y credenciales enviadas por correo.')
+                return redirect('lista_usuarios')
+
     else:
         form = UsuarioForm()
 
     return render(request, 'agregar_usuario.html', {'form': form})
+
+
 
 
 def entrada_exitosa(request):

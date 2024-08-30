@@ -17,6 +17,7 @@ class Usuario(models.Model):
     correo_electronico = models.EmailField(unique=True)
     fecha_registro = models.DateField(auto_now_add=True)
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
+    
 
     # Opciones de servicio
     OPCIONES_SERVICIO = [
