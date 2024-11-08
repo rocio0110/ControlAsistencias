@@ -175,10 +175,10 @@ def home_view(request):
 def admin_login_view(request):
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
-        if form.is_valid():
+        if form.is_valid(): 
             user = form.get_user()
             if user.is_superuser:  # Verificar si el usuario es un superusuario
-                login(request, user)
+                login(request, user) # type: ignore
                 return redirect('admin_dashboard')
             else:
                 form.add_error(None, "Acceso denegado. Solo los administradores pueden acceder.")
