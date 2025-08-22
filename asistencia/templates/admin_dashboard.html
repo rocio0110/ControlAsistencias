@@ -80,58 +80,65 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="white-panel pn">
-                                    <div class="white-header">
+                                    <div class="white-header text-center">
                                         <h5>Últimos Usuarios</h5>
                                     </div>
-                                    <table class="table">
-                                        <thead>
-                                            <tr>
-                                                <th>Nombre</th>
-                                                <th>Correo</th>
-                                                <th>Activo</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {% for usuario in usuarios %}
-                                            <tr>
-                                                <td>{{ usuario.nombre }} {{ usuario.apellido_paterno }} {{ usuario.apellido_materno }}</td>
-                                                <td>{{ usuario.correo_electronico }}</td>
-                                                <td>{% if usuario.activo %}Sí{% else %}No{% endif %}</td>
-                                            </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
+                                    <div class="table-responsive">
+                                        <table class="table table-striped table-bordered text-center">
+                                            <thead class="table-dark">
+                                                <tr>
+                                                    <th>Nombre</th>
+                                                    <th>Correo</th>
+                                                    <th>Activo</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for usuario in usuarios %}
+                                                <tr>
+                                                    <td>{{ usuario.nombre }} {{ usuario.apellido_paterno }} {{ usuario.apellido_materno }}</td>
+                                                    <td>{{ usuario.correo_electronico }}</td>
+                                                    <td class="fw-bold {% if usuario.activo %}text-success{% else %}text-danger{% endif %}">
+                                                        {% if usuario.activo %}Sí{% else %}No{% endif %}
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
-        
+                        
                             <div class="col-md-6">
                                 <div class="white-panel pn">
-                                    <div class="white-header">
+                                    <div class="white-header text-center">
                                         <h5>Últimas Asistencias</h5>
                                     </div>
-                                    <table class="table">
-                                        <thead>
-                                            <tr>
-                                                <th>Usuario</th>
-                                                <th>Entrada</th>
-                                                <th>Salida</th>
-                                                <th>Horas</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {% for asistencia in asistencias %}
-                                            <tr>
-                                                <td>{{ asistencia.usuario.nombre }} {{ asistencia.usuario.apellido_paterno }} {{ asistencia.usuario.apellido_materno }}</td>
-                                                <td>{{ asistencia.hora_entrada }}</td>
-                                                <td>{{ asistencia.hora_salida }}</td>
-                                                <td>{{ asistencia.horas_trabajadas|floatformat:2 }} hrs</td>
-                                            </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
+                                    <div class="table-responsive">
+                                        <table class="table table-striped table-bordered text-center">
+                                            <thead class="table-dark">
+                                                <tr>
+                                                    <th>Usuario</th>
+                                                    <th>Entrada</th>
+                                                    <th>Salida</th>
+                                                    <th>Horas</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for asistencia in asistencias %}
+                                                <tr>
+                                                    <td>{{ asistencia.usuario.nombre }} {{ asistencia.usuario.apellido_paterno }} {{ asistencia.usuario.apellido_materno }}</td>
+                                                    <td>{{ asistencia.hora_entrada }}</td>
+                                                    <td>{{ asistencia.hora_salida }}</td>
+                                                    <td class="fw-bold text-primary">{{ asistencia.horas_trabajadas|floatformat:2 }} hrs</td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
                         </div>
+                                                                                                        
                     </div>
                 </div>
             </section>
