@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 # ----------------- ESCANEO QR -----------------
 def scan_qr_view(request):
     return render(request, 'scan_qr/scan_qr.html')
+
 @login_required
 def procesar_qr(request, tipo_qr):
     user = request.user
@@ -247,7 +248,7 @@ def home_view(request):
 
 # ----------------- FUNCIONES AUXILIARES -----------------
 def generate_password(apellido_paterno, apellido_materno, length=10):
-    base = (apellido_paterno[:2] + apellido_materno[:2]).lower()
+    base = (apellido_paterno[:1] + apellido_materno[:1]).lower()
     chars = string.ascii_letters + string.digits + "!@#$%^&*()"
     extra_length = max(length - len(base), 4)
     random_chars = ''.join(random.choice(chars) for _ in range(extra_length))
@@ -266,7 +267,7 @@ def generate_unique_username(nombre, apellido_paterno, apellido_materno):
     return username
 
 
-def enviar_correo_bienvenida(nombre, username, password, correo_electronico):
+def enviar_correo_bienvenida(nombre,apellido_paterno, apellido_materno, username, password, correo_electronico):
     subject = "Bienvenido a Control de Asistencias"
     from_email = settings.DEFAULT_FROM_EMAIL
     to = [correo_electronico]
@@ -291,13 +292,14 @@ def enviar_correo_bienvenida(nombre, username, password, correo_electronico):
         <table width="100%" style="max-width: 600px; margin: auto; background: #ffffff; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
             <tr>
                 <td style="text-align: center; padding: 20px; background-color: #602935; border-radius: 8px 8px 0 0;">
-                    <img src="https://tuservidor.com/static/img/logo.png" alt="Logo Empresa" width="120" />
-                    <h2 style="color: #ffffff; margin-top: 10px;">Control de Asistencias</h2>
                 </td>
             </tr>
+            <center>
+            <img src="https://res.cloudinary.com/dtb5lfxme/image/upload/v1756189460/f5948bf3-c05a-4941-a4d0-70744b088b2d_datj6r.jpg" alt="Imagen Base64">
+            </center>
             <tr>
                 <td style="padding: 30px;">
-                    <p style="font-size: 16px; color: #602935;">Hola <b>{nombre}</b>,</p>
+                    <p style="font-size: 16px; color: #602935;">Hola <b>{nombre} {apellido_paterno} {apellido_materno}</b>,</p>
                     <p style="font-size: 15px; color: #602935;">Nos complace darte la bienvenida al sistema <b>Control de Asistencias</b>. 
                     Tu usuario ha sido creado exitosamente. A continuación te compartimos tus credenciales:</p>
 
@@ -305,9 +307,7 @@ def enviar_correo_bienvenida(nombre, username, password, correo_electronico):
                         <p><b>Usuario:</b> {username}</p>
                         <p><b>Contraseña:</b> {password}</p>
                     </div>
-
-                    <p style="font-size: 14px; color: #602935;">Por favor, guarda esta información en un lugar seguro y cámbiala en tu primer inicio de sesión.</p>
-                    
+                    <p style="font-size: 14px; color: #602935;">Por favor, guarda esta información en un lugar seguro.</p>
                     <p style="margin-top: 30px; font-size: 15px; color: #602935;">Saludos,<br> 
                     <b>Equipo de Control de Asistencias</b></p>
                 </td>
@@ -351,7 +351,7 @@ def agregar_usuario(request):
             usuario.cambiar_contrasena = True
             usuario.save()
 
-            enviar_correo_bienvenida(usuario.nombre, username, password, correo_electronico)
+            enviar_correo_bienvenida(usuario.nombre, usuario.apellido_paterno, usuario.apellido_materno, username, password, correo_electronico)
 
             messages.success(request, f'Usuario {usuario.nombre} {usuario.apellido_paterno} {usuario.apellido_materno} agregado correctamente.')
             return redirect('lista_usuarios')

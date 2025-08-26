@@ -42,9 +42,7 @@ if RENDER_EXTERNAL_HOSTNAME:
     CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_EXTERNAL_HOSTNAME}")
 
 
-RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
-if RENDER_EXTERNAL_HOSTNAME:
-    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+
 
 # Application definition
 
@@ -75,7 +73,12 @@ MIDDLEWARE = [
 # Configuración de archivos estáticos
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+# STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 
 ROOT_URLCONF = 'control_asistencias.urls'
 
@@ -171,7 +174,6 @@ EMAIL_HOST_PASSWORD = 'xhpi paxz bpxh gksr'
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 
-ADMIN_EMAIL = 'admin@example.com'  # Reemplaza con el correo del administrador
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -188,15 +190,7 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
-MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',  # <- debe ir antes de auth
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',  # <- auth
-    'django.contrib.messages.middleware.MessageMiddleware',  # <- mensajes
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-]
+
 
 
 
