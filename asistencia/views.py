@@ -74,14 +74,14 @@ def procesar_qr(request, tipo_qr):
 def generar_qr(request, tipo_qr):
     user = request.user
     usuario = Usuario.objects.get(user=user)
-    hoy = timezone.localtime(timezone.now()).date()
+    hoy = timezone.now().date()
 
     if tipo_qr == 'entrada':
         qr_existente = QR.objects.filter(usuario=usuario, qr_entrada_fecha__date=hoy).exists()
         if qr_existente:
             return render(request, 'error.html', {'mensaje': 'Ya has generado un QR de entrada para hoy.'})
 
-        hora_actual = timezone.localtime(timezone.now())  # Asegura que use la hora local
+        hora_actual = timezone.now()  # Asegura que use la hora local
         qr_data = f"Folio prestador {usuario.id}\nEntrada\nGenerado: {hora_actual.strftime('%H:%M:%S')}"
         qr = qrcode.QRCode(
             version=1,
@@ -113,7 +113,7 @@ def generar_qr(request, tipo_qr):
         if not asistencia:
             return render(request, 'error.html', {'mensaje': 'No has registrado una entrada hoy.'})
 
-        hora_actual = timezone.localtime(timezone.now())  # Asegura que use la hora local
+        hora_actual = timezone.now()  # Asegura que use la hora local
         qr_data = f"Folio prestador {usuario.id}\nSalida\nHora de escaneo: {hora_actual.strftime('%H:%M:%S')}\nHoras trabajadas: {asistencia.horas_trabajadas:.2f}\nNos vemos mañana, {usuario.nombre}. ¡Gracias por tu trabajo!"
         qr = qrcode.QRCode(
             version=1,
@@ -140,6 +140,8 @@ def generar_qr(request, tipo_qr):
     return render(request, 'error.html', {'mensaje': 'Tipo de QR no válido.'})
 
 
+from django.utils.timezone import localtime, now
+
 def registrar_asistencia(request):
     if request.method == 'POST':
         try:
@@ -152,21 +154,23 @@ def registrar_asistencia(request):
 
             usuario = Usuario.objects.get(id=folio)
 
+            hoy = localtime(now()).date()
+
             asistencia, created = Asistencia.objects.get_or_create(
                 usuario=usuario,
-                fecha_escaneo_entrada__date=timezone.now().date()
+                fecha_escaneo_entrada__date=hoy
             )
 
             if tipo == 'Entrada':
                 if not asistencia.fecha_escaneo_entrada:
-                    asistencia.fecha_escaneo_entrada = timezone.now()
+                    asistencia.fecha_escaneo_entrada = localtime(now())
                     mensaje = "Entrada registrada con éxito."
                 else:
                     return JsonResponse({'status': 'error', 'message': 'Ya registraste entrada hoy.'})
 
             elif tipo == 'Salida':
                 if asistencia.fecha_escaneo_entrada and not asistencia.fecha_escaneo_salida:
-                    asistencia.fecha_escaneo_salida = timezone.now()
+                    asistencia.fecha_escaneo_salida = localtime(now())
                     asistencia.calcular_horas()
                     mensaje = "Salida registrada con éxito."
                 else:
@@ -183,6 +187,7 @@ def registrar_asistencia(request):
             return JsonResponse({'status': 'error', 'message': str(e)})
 
     return JsonResponse({'status': 'error', 'message': 'Método no permitido'})
+
 
 
 # ----------------- TABLAS Y VISTAS -----------------
@@ -441,16 +446,40 @@ def inicio_prestador(request):
     return render(request, 'prestador/inicio.html')
 
 
+from django.db.models import Sum, Count
+from django.db.models.functions import TruncDate
+from django.utils import timezone
+
 @login_required
 def dashboard_prestador(request):
     usuario = request.user.usuario
-    total_horas_trabajadas = Asistencia.objects.filter(usuario=usuario).aggregate(Sum('horas'))['horas__sum'] or 0
+
+    # Total horas trabajadas
+    total_horas_trabajadas = Asistencia.objects.filter(usuario=usuario).aggregate(
+        Sum('horas')
+    )['horas__sum'] or 0
+
+    # Horas restantes
     horas_restantes = usuario.horas_requeridas - usuario.horas_realizadas
+
+    # Total asistencias
     total_asistencias = Asistencia.objects.filter(usuario=usuario).count()
-    asistencias_recientes = Asistencia.objects.filter(usuario=usuario).order_by('-fecha_escaneo_entrada')[:5]
+
+    # Asistencias recientes (con conversión a hora local)
+    asistencias_recientes = Asistencia.objects.filter(usuario=usuario).order_by(
+        '-fecha_escaneo_entrada'
+    )[:5]
+    # Convertimos a hora local
+    for a in asistencias_recientes:
+        if a.fecha_escaneo_entrada:
+            a.fecha_escaneo_entrada = timezone.localtime(a.fecha_escaneo_entrada)
+        if a.fecha_escaneo_salida:
+            a.fecha_escaneo_salida = timezone.localtime(a.fecha_escaneo_salida)
+
+    # Asistencias por día usando TruncDate para respetar zona horaria
     asistencias_por_dia = (
         Asistencia.objects.filter(usuario=usuario)
-        .extra({'fecha': "DATE(fecha_escaneo_entrada)"})
+        .annotate(fecha=TruncDate('fecha_escaneo_entrada'))
         .values('fecha')
         .annotate(total=Count('id'))
         .order_by('fecha')
@@ -466,6 +495,7 @@ def dashboard_prestador(request):
     }
 
     return render(request, 'prestador/dashboard_prestador.html', context)
+
 
 
 @login_required
