@@ -286,40 +286,41 @@ def enviar_correo_bienvenida(nombre, username, password, correo_electronico):
     """
 
     html_content = f"""
-    <html>
-        <body style="font-family: Arial, sans-serif; background-color: #f4f6f9; padding: 20px;">
-            <table width="100%" style="max-width: 600px; margin: auto; background: #ffffff; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
-                <tr>
-                    <td style="text-align: center; padding: 20px; background-color: #004080; border-radius: 8px 8px 0 0;">
-                        <img src="https://tuservidor.com/static/img/logo.png" alt="Logo Empresa" width="120" />
-                        <h2 style="color: white; margin-top: 10px;">Control de Asistencias</h2>
-                    </td>
-                </tr>
-                <tr>
-                    <td style="padding: 30px;">
-                        <p style="font-size: 16px; color: #333;">Hola <b>{nombre}</b>,</p>
-                        <p style="font-size: 15px; color: #333;">Nos complace darte la bienvenida al sistema <b>Control de Asistencias</b>. 
-                        Tu usuario ha sido creado exitosamente. A continuación te compartimos tus credenciales:</p>
+<html>
+    <body style="font-family: Arial, sans-serif; background-color: #B08A5B; padding: 20px;">
+        <table width="100%" style="max-width: 600px; margin: auto; background: #ffffff; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+            <tr>
+                <td style="text-align: center; padding: 20px; background-color: #602935; border-radius: 8px 8px 0 0;">
+                    <img src="https://tuservidor.com/static/img/logo.png" alt="Logo Empresa" width="120" />
+                    <h2 style="color: #ffffff; margin-top: 10px;">Control de Asistencias</h2>
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 30px;">
+                    <p style="font-size: 16px; color: #602935;">Hola <b>{nombre}</b>,</p>
+                    <p style="font-size: 15px; color: #602935;">Nos complace darte la bienvenida al sistema <b>Control de Asistencias</b>. 
+                    Tu usuario ha sido creado exitosamente. A continuación te compartimos tus credenciales:</p>
 
-                        <div style="background-color: #f4f6f9; padding: 15px; border-radius: 6px; margin: 20px 0; font-size: 15px; color: #333;">
-                            <p><b>Usuario:</b> {username}</p>
-                            <p><b>Contraseña:</b> {password}</p>
-                        </div>
+                    <div style="background-color: #ffffff; padding: 15px; border-radius: 6px; margin: 20px 0; font-size: 15px; color: #602935;">
+                        <p><b>Usuario:</b> {username}</p>
+                        <p><b>Contraseña:</b> {password}</p>
+                    </div>
 
-                        <p style="font-size: 14px; color: #666;">Por favor, guarda esta información en un lugar seguro y cámbiala en tu primer inicio de sesión.</p>
-                        
-                        <p style="margin-top: 30px; font-size: 15px; color: #333;">Saludos,<br> 
-                        <b>Equipo de Control de Asistencias</b></p>
-                    </td>
-                </tr>
-                <tr>
-                    <td style="text-align: center; padding: 15px; background-color: #004080; border-radius: 0 0 8px 8px; color: white; font-size: 12px;">
-                        © 2025 Control de Asistencias. Todos los derechos reservados.
-                    </td>
-                </tr>
-            </table>
-        </body>
-    </html>
+                    <p style="font-size: 14px; color: #602935;">Por favor, guarda esta información en un lugar seguro y cámbiala en tu primer inicio de sesión.</p>
+                    
+                    <p style="margin-top: 30px; font-size: 15px; color: #602935;">Saludos,<br> 
+                    <b>Equipo de Control de Asistencias</b></p>
+                </td>
+            </tr>
+            <tr>
+                <td style="text-align: center; padding: 15px; background-color: #B08A5B; border-radius: 0 0 8px 8px; color: #ffffff; font-size: 12px;">
+                    © 2025 Control de Asistencias. Todos los derechos reservados.
+                </td>
+            </tr>
+        </table>
+    </body>
+</html>
+
     """
 
     msg = EmailMultiAlternatives(subject, text_content, from_email, to)
