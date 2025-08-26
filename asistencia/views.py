@@ -449,15 +449,23 @@ def inicio_prestador(request):
 from django.db.models import Sum, Count
 from django.db.models.functions import TruncDate
 from django.utils import timezone
+from math import floor
+from datetime import timedelta
 
 @login_required
 def dashboard_prestador(request):
     usuario = request.user.usuario
 
-    # Total horas trabajadas
-    total_horas_trabajadas = Asistencia.objects.filter(usuario=usuario).aggregate(
-        Sum('horas')
-    )['horas__sum'] or 0
+    # Total horas trabajadas (Sum de DurationField)
+    total_horas = Asistencia.objects.filter(usuario=usuario).aggregate(
+        total=Sum('horas')
+    )['total'] or timedelta(0)
+
+    # Convertimos total_horas a HH:MM
+    total_segundos = int(total_horas.total_seconds())
+    total_horas_int = total_segundos // 3600
+    total_minutos_int = (total_segundos % 3600) // 60
+    total_horas_trabajadas_str = f"{total_horas_int:02d}:{total_minutos_int:02d}"
 
     # Horas restantes
     horas_restantes = usuario.horas_requeridas - usuario.horas_realizadas
@@ -466,15 +474,20 @@ def dashboard_prestador(request):
     total_asistencias = Asistencia.objects.filter(usuario=usuario).count()
 
     # Asistencias recientes (con conversión a hora local)
-    asistencias_recientes = Asistencia.objects.filter(usuario=usuario).order_by(
-        '-fecha_escaneo_entrada'
-    )[:5]
-    # Convertimos a hora local
+    asistencias_recientes = Asistencia.objects.filter(usuario=usuario).order_by('-fecha_escaneo_entrada')[:5]
+    
     for a in asistencias_recientes:
+        # Convertimos a hora local
         if a.fecha_escaneo_entrada:
             a.fecha_escaneo_entrada = timezone.localtime(a.fecha_escaneo_entrada)
         if a.fecha_escaneo_salida:
             a.fecha_escaneo_salida = timezone.localtime(a.fecha_escaneo_salida)
+
+        # Formateamos horas trabajadas en HH:MM
+        total_segundos_asistencia = int(a.horas_trabajadas * 3600)  # a.horas_trabajadas es decimal
+        horas = total_segundos_asistencia // 3600
+        minutos = (total_segundos_asistencia % 3600) // 60
+        a.horas_trabajadas_str = f"{horas:02d}:{minutos:02d}"
 
     # Asistencias por día usando TruncDate para respetar zona horaria
     asistencias_por_dia = (
@@ -487,7 +500,7 @@ def dashboard_prestador(request):
 
     context = {
         'usuario': usuario,
-        'total_horas_trabajadas': total_horas_trabajadas,
+        'total_horas_trabajadas': total_horas_trabajadas_str,
         'horas_restantes': horas_restantes,
         'total_asistencias': total_asistencias,
         'asistencias_recientes': asistencias_recientes,
